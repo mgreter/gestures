@@ -1,0 +1,137 @@
+
+HTML, BODY, PRE
+{
+	margin: 0px;
+	padding: 0px;
+}
+
+#body
+{
+	margin: 0px auto;
+	max-width: 900px;
+	padding: 20px 20px;
+}
+
+#red,
+#blue,
+#green
+{
+	width: auto;
+	padding: 80px 60px;
+}
+
+#red
+{
+	margin-bottom: 20px;
+}
+
+#green
+{
+	height: 10px;
+}
+
+#red { background-color: red; }
+#blue { background-color: blue; }
+#green { background-color: green; }
+
+#logs,
+#mouseup,
+#touchup,
+#mousemove,
+#touchmove
+{
+	overflow: hidden;
+	margin-bottom: 30px;
+}
+
+#log,
+#log-red,
+#log-blue,
+#log-green,
+#mouseup-stop,
+#touchup-stop,
+#mousemove-stop,
+#touchmove-stop,
+#mouseup-prevent,
+#touchup-prevent,
+#mouseup-consume,
+#touchup-consume,
+#mousemove-prevent,
+#touchmove-prevent,
+#mousemove-consume,
+#touchmove-consume
+{
+	overflow: auto;
+	background-color: yellow;
+	font-size: 12px;
+	font-family: verdana;
+	font-weight: bold;
+
+}
+
+#log-red,
+#mouseup-stop,
+#touchup-stop,
+#mousemove-stop,
+#touchmove-stop
+{
+	width: 30%;
+	float: left;
+}
+
+#log-blue,
+#mouseup-prevent,
+#touchup-prevent,
+#mousemove-prevent,
+#touchmove-prevent
+{
+	width: 30%;
+	margin: 0 auto;
+}
+
+#log-green,
+#mouseup-consume,
+#touchup-consume,
+#mousemove-consume,
+#touchmove-consume
+{
+	width: 30%;
+	float: right;
+}
+
+#log-red > DIV,
+#log-blue > DIV,
+#log-green > DIV,
+#mouseup-stop > DIV,
+#touchup-stop > DIV,
+#mousemove-stop > DIV,
+#touchmove-stop > DIV,
+#mouseup-prevent > DIV,
+#touchup-prevent > DIV,
+#mouseup-consume > DIV,
+#touchup-consume > DIV,
+#mousemove-prevent > DIV,
+#touchmove-prevent > DIV,
+#mousemove-consume > DIV,
+#touchmove-consume > DIV
+{
+	padding: 20px 20px;
+}
+
+#log,
+#log-red,
+#log-blue,
+#log-green
+{
+	text-align: left;
+	font-weight: normal;
+	background-color: yellow;
+}
+
+#log
+{
+	width: 670px;
+	padding: 0px 20px;
+	background-color: #F0F0F0;
+}
+
