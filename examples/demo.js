@@ -36,13 +36,13 @@ jQuery(document).bind('trapmousemove', function()
 			})
 */
 
-jQuery('#green').bind('touchstart', function(evt)
+jQuery('#green, #blue').bind('touchstart', function(evt)
 {
-
+/*
 	evt.stopImmediatePropagation();
 	evt.preventDefault();
 	return false;
-
+*/
 });
 
 			var colors = ['red', 'blue', 'green'];
@@ -62,7 +62,12 @@ jQuery('#green').bind('touchstart', function(evt)
 					{
 						if (this.fingers < i + 1)
 						{
-							evt.stopPropagation();
+							// evt.preventDefault();
+							// consume this finger here
+							// otherwise other may get them too
+							// evt.stopPropagation();
+							// this will abort immediately
+							// evt.stopImmediatePropagation();
 							return true;
 						}
 					}

@@ -1,5 +1,13 @@
 /*
 
+  Copyright (c) Marcel Greter 2011/2013 - OCBNET Gestures 0.0.0
+  This is free software; you can redistribute it and/or modify it under the terms
+  of the [GNU General Public License](http://www.gnu.org/licenses/gpl-3.0.txt),
+  either version 3 of the License, or (at your option) any later version.
+
+*/;
+/*
+
   Copyright (c) Marcel Greter 2012 - OCBNET gesture 0.0.0
   This plugin available for use in all personal or commercial projects under both MIT and GPL licenses.
 
@@ -564,6 +572,272 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 
 
 
+
+})(jQuery);
+// EO private scope;
+// @@@ private scope @@@
+(function()
+{
+
+
+	// @@@ private fn: trap @@@
+	function trap (handleObj)
+	{
+
+		// get current handler for event
+		var handler = handleObj.handler;
+
+		// @@@ closure fn: trapped @@@
+		var trapped = function (evt)
+		{
+
+			// call the original handler first
+			var rv = handler.call(this, evt);
+
+			// check if event propagation was disabled
+			if (rv == false || evt.isPropagationStopped())
+			{
+
+				// store some event attributes
+				var type = evt.type,
+				    isTrigger = evt.isTrigger,
+				    isPropagationStopped = evt.isPropagationStopped,
+				    isImmediatePropagationStopped = evt.isImmediatePropagationStopped;
+
+				// add trap prefix to event
+				// for custom event on target
+				evt.type = 'trap' + evt.type;
+
+				// force custom event propagating
+				evt.isPropagationStopped = function () { return false; };
+				evt.isImmediatePropagationStopped = function () { return false; }
+
+				// this will bubble up so you can
+				// handle that trapped event anyway
+				// XXX: Maybe call on parent instead
+				jQuery(evt.target).trigger(evt);
+
+				// restore some event attributes
+				evt.type = type; evt.isTrigger = isTrigger;
+				if (isPropagationStopped) evt.stopPropagation();
+				if (isImmediatePropagationStopped) evt.stopImmediatePropagation();
+
+				// return the same as original handler
+				if (typeof rv != 'undefined') return rv;
+
+			}
+			// EO if not propagating
+
+		}
+		// @@@ EO closure fn: trapped @@@
+
+		// reset given handler
+		handleObj.handler = trapped;
+
+	}
+	// @@@ EO private fn: trap @@@
+
+
+	// special event callback
+	var special = { add : trap };
+
+	// now register common event types to trap
+	jQuery.event.special['mouseup'] = special;
+	jQuery.event.special['mouseout'] = special;
+	jQuery.event.special['mouseover'] = special;
+	jQuery.event.special['mousemove'] = special;
+	jQuery.event.special['mousedown'] = special;
+	jQuery.event.special['touchend'] = special;
+	jQuery.event.special['touchmove'] = special;
+	jQuery.event.special['touchstart'] = special;
+	jQuery.event.special['touchcancel'] = special;
+
+
+})()
+// @@@ EO private scope @@@
+;
+/*
+
+  Copyright (c) Marcel Greter 2012 - OCBNET Gestures 0.0.0
+  This plugin available for use in all personal or commercial projects under both MIT and GPL licenses.
+
+*/
+
+/* @@@@@@@@@@ STATIC CLASS @@@@@@@@@@ */
+
+// create private scope
+(function (jQuery)
+{
+
+	// @@@ private fn: handleTouchDownEvent @@@
+	function handleTouchDownEvent (evt)
+	{
+
+		// get variables from the event object
+		var el = evt.currentTarget;
+
+		// get touch event options
+		var org = evt.originalEvent,
+		    touches = org.touches || [],
+		    changed = org.changedTouches || [];
+
+		// process all newly added fingers
+		jQuery(changed).each(function (i, touch)
+		{
+
+			// create the finger object
+			// copy some data from event
+			var finger = {
+				el: el,
+				id : touch.identifier,
+				type : evt.type,
+				pageX : touch.pageX,
+				pageY : touch.pageY,
+				clientX : touch.clientX,
+				clientY : touch.clientY,
+				screenX : touch.screenX,
+				screenY : touch.screenY,
+				timeStamp : evt.timeStamp,
+				originalEvent : evt.originalEvent
+			};
+
+			// create a fingerdown event object
+			var event = new jQuery.Event('fingerdown', {
+
+				finger: finger
+
+			})
+
+			// emmit this event on the element
+			// this will bubble up to propably
+			// more gesture handlers, use setup
+			// to decide on each gesture if you
+			// would like to use that finger
+			jQuery(el).trigger(event)
+
+		})
+
+	}
+	// @@@ EO private fn: handleTouchDownEvent @@@
+
+
+	// @@@ private fn: handleTouchEndEvent @@@
+	function handleTouchEndEvent (evt)
+	{
+
+		// get variables from the event object
+		var el = evt.currentTarget;
+
+		// get touch event options
+		var org = evt.originalEvent,
+		    touches = org.touches || [],
+		    changed = org.changedTouches || [];
+
+		// process all newly added fingers
+		jQuery(changed).each(function (i, touch)
+		{
+
+			// create the finger object
+			// copy some data from event
+			var finger = {
+				id : touch.identifier,
+				type : evt.type,
+				pageX : touch.pageX,
+				pageY : touch.pageY,
+				clientX : touch.clientX,
+				clientY : touch.clientY,
+				screenX : touch.screenX,
+				screenY : touch.screenY,
+				timeStamp : evt.timeStamp,
+				originalEvent : evt.originalEvent
+			};
+
+			// create a fingerdown event object
+			var event = new jQuery.Event('fingerup', {
+
+				finger: finger
+
+			})
+
+			// emmit this event on the element
+			// this will bubble up to propably
+			// more gesture handlers, use setup
+			// to decide on each gesture if you
+			// would like to use that finger
+			jQuery(el).trigger(event)
+
+		})
+
+	}
+	// @@@ EO private fn: handleTouchEndEvent @@@
+
+	// @@@ private fn: handleTouchMoveEvent @@@
+	function handleTouchMoveEvent (evt)
+	{
+
+		// get variables from the event object
+		var el = evt.currentTarget;
+
+		// get the gesture data from element
+		var gesture = jQuery(el).data('gesture');
+
+		// get touch event options
+		var org = evt.originalEvent,
+		    touches = org.touches || [],
+		    changed = org.changedTouches || [];
+
+		// create new fingers objects
+		// this is stored as move data
+		var fingers = []
+
+		// process all newly added fingers
+		jQuery(changed).each(function (i, touch)
+		{
+
+			// create new fingers objects
+			// this is stored as move data
+			fingers.push({
+				el : el,
+				id : touch.identifier,
+				type : evt.type,
+				pageX : touch.pageX,
+				pageY : touch.pageY,
+				clientX : touch.clientX,
+				clientY : touch.clientY,
+				screenX : touch.screenX,
+				screenY : touch.screenY,
+				timeStamp : evt.timeStamp,
+				originalEvent : evt.originalEvent
+			});
+
+		});
+		// EO all changed fingers
+
+		// dispatch normalized data
+		gesture.fingersMove(fingers, evt);
+
+	}
+	// @@@ EO private fn: handleTouchMoveEvent @@@
+
+	OCBNET.Gestures.prototype.handler['touchend'] = handleTouchEndEvent;
+	OCBNET.Gestures.prototype.handler['touchcancel'] = handleTouchEndEvent;
+	OCBNET.Gestures.prototype.handler['touchstart'] = handleTouchDownEvent;
+	OCBNET.Gestures.prototype.handler['touchmove'] = handleTouchMoveEvent;
+
+	OCBNET.Gestures.prototype.init.push(function (el)
+	{
+		// bind ...
+		jQuery(el)
+			// ... to the touch events
+			.bind('touchend', jQuery.proxy(this.handle, this))
+			.bind('touchmove', jQuery.proxy(this.handle, this))
+			.bind('touchstart', jQuery.proxy(this.handle, this))
+			.bind('touchcancel', jQuery.proxy(this.handle, this))
+			.bind('traptouchend', jQuery.proxy(this.handle, this))
+			.bind('traptouchmove', jQuery.proxy(this.handle, this))
+			.bind('traptouchstart', jQuery.proxy(this.handle, this))
+			.bind('traptouchcancel', jQuery.proxy(this.handle, this))
+	});
 
 })(jQuery);
 // EO private scope
