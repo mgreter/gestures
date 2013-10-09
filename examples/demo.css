@@ -17,12 +17,7 @@ HTML, BODY, PRE
 #green
 {
 	width: auto;
-	padding: 80px 60px;
-}
-
-#red
-{
-	margin-bottom: 20px;
+	padding: 60px 60px;
 }
 
 #green
@@ -34,14 +29,15 @@ HTML, BODY, PRE
 #blue { background-color: blue; }
 #green { background-color: green; }
 
+#red,
 #logs,
 #mouseup,
 #touchup,
 #mousemove,
 #touchmove
 {
-	overflow: hidden;
-	margin-bottom: 30px;
+	overflow: auto;
+	margin-bottom: 15px;
 }
 
 #log,
@@ -99,6 +95,7 @@ HTML, BODY, PRE
 	float: right;
 }
 
+#log,
 #log-red > DIV,
 #log-blue > DIV,
 #log-green > DIV,
@@ -115,7 +112,7 @@ HTML, BODY, PRE
 #mousemove-consume > DIV,
 #touchmove-consume > DIV
 {
-	padding: 20px 20px;
+	padding: 15px 15px;
 }
 
 #log,
@@ -130,8 +127,6 @@ HTML, BODY, PRE
 
 #log
 {
-	width: 670px;
-	padding: 0px 20px;
 	background-color: #F0F0F0;
 }
 

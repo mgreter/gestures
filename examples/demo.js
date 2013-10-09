@@ -60,7 +60,7 @@ jQuery('#green').bind('touchstart', function(evt)
 
 					start: function (evt, finger)
 					{
-						if (this.count < i + 1)
+						if (this.fingers < i + 1)
 						{
 							evt.stopPropagation();
 							return true;
@@ -68,19 +68,6 @@ jQuery('#green').bind('touchstart', function(evt)
 					}
 
 				});
-
-/*
-
-				jQuery('#' + color).bind('fingerdown', function (evt)
-				{
-					// evt.stopPropagation()
-				});
-
-				jQuery('#' + color).bind('fingermove', function (evt)
-				{
-					evt.stopPropagation()
-				});
-*/
 
 				var events = ['fingerup', 'fingertap', 'fingersmove', 'fingerdown']; //
 
@@ -190,6 +177,7 @@ console.breaker = function ()
 
 			function resolve (obj)
 			{
+				if (obj !== null)
 				switch (typeof obj)
 				{
 					case 'object':
@@ -209,8 +197,9 @@ console.breaker = function ()
 
 				html = div + '<br>';
 
-				var hand = jQuery('#' + div).data('hand');
-var attr = ['count', 'finger', 'el', 'order', 'swipeSector', 'rotation', 'distance'];
+				var hand = jQuery('#' + div).data('gesture');
+
+var attr = ['fingers', 'finger', 'el', 'ordered', 'swipeSector', 'rotation', 'distance'];
 				if (hand)
 				{
 					for (var i in attr)
@@ -232,11 +221,15 @@ var attr = ['count', 'finger', 'el', 'order', 'swipeSector', 'rotation', 'distan
 							if (val.get) {
 								html += i + ": [" + val.length + "] " + resolve(val.get(0)) + "<br>";
 							}
+							else if (val.id) {
+								html += i + ": " + resolve(val) + "<br>";
+							}
 							else
 							{
 								html += i + ": [obj]<br>";
 								for (var n in val)
 								{
+									if (val.hasOwnProperty(n))
 									html += '&nbsp;&nbsp;- ' + n + ': ' + resolve(val[n]) + '<br>';
 								}
 							}
