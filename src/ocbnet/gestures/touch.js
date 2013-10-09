@@ -121,8 +121,7 @@
 		var el = evt.currentTarget;
 
 		// get the gesture data from element
-		var hand = jQuery(el).data('hand');
-		var gestures = jQuery(el).data('gestures');
+		var gesture = jQuery(el).data('gesture');
 
 		// get touch event options
 		var org = evt.originalEvent,
@@ -131,7 +130,7 @@
 
 		// create new fingers objects
 		// this is stored as move data
-		var changes = []
+		var fingers = []
 
 		// process all newly added fingers
 		jQuery(changed).each(function (i, touch)
@@ -139,7 +138,7 @@
 
 			// create new fingers objects
 			// this is stored as move data
-			changes.push({
+			fingers.push({
 				el : el,
 				id : touch.identifier,
 				type : evt.type,
@@ -157,7 +156,7 @@
 		// EO all changed fingers
 
 		// dispatch normalized data
-		gestures.fingersMove(changes, evt);
+		gesture.fingersMove(fingers, evt);
 
 	}
 	// @@@ EO private fn: handleTouchMoveEvent @@@
