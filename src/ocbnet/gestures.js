@@ -36,8 +36,14 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		// dom element
 		this.el = el;
 
+		// attached fingers
+		this.hands = [];
+
 		// count fingers
 		this.fingers = 0;
+
+		// maximum fingers
+		this.maximum = 0;
 
 		// attached fingers
 		this.finger = {};
@@ -67,6 +73,18 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		// add element to array
 		elements.push(jQuery(el));
 
+	};
+	// @@@ EO Object Constructor @@@
+
+	// @@@ Object Constructor @@@
+	OCBNET.Gestures.Hand = function ()
+	{
+	};
+	// @@@ EO Object Constructor @@@
+
+	// @@@ Object Constructor @@@
+	OCBNET.Gestures.Finger = function ()
+	{
 	};
 	// @@@ EO Object Constructor @@@
 
@@ -146,6 +164,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 
 					// increase finger fingers
 					gesture.fingers ++;
+
+					// remember maximum fingers on gesture
+					if (gesture.maximum < gesture.fingers)
+					{ gesture.maximum = gesture.fingers; }
 
 					// reset cached data
 					gesture.cached = {};

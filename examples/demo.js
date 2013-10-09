@@ -51,17 +51,51 @@ jQuery('#green, #blue').bind('touchstart', function(evt)
 			{
 
 
-				jQuery('#' + color).gesture({
+				jQuery('#' + color)
 
-					stop: function (changes) { console.log('STOP HAND', color, this.distance, this.rotation); },
-					move: function (changes) { console.log('MOVE HAND', color, this.distance, this.rotation); },
-					transform: function (changes, evt) { console.log('TRANSFORM HAND', color, this.distance, this.rotation); evt.preventDefault(); },
-					swipe: function (sector, changes) { console.log('SWIPE HAND', color, sector, this.distance, this.rotation); },
+				.bind('fingerdown', function (evt)
+				{
+						evt.preventDefault();
+						// consume this finger here
+						// otherwise other may get them too
+						evt.stopPropagation();
+
+				})
+/*
+				.gesture(function (hand, finger)
+				{
+
+// example 1
+// swipe with one finger
+// zoom with two fingers
+// releasing one finger
+// switches back to swipe
+// or do ignore afterwards
+// how to implement that?
+
+					finger.on('move', function() { });
+					finger.filter('<3').('move', function() { });
+					hand.on('move', function() { });
+					hand.filter(2).on('move', function() { });
+					hand.on('swipe', function() { });
+					hand.filter(2).on('swipe', function() { });
+
+				})
+*/
+				.gesture({
+
+					stop: function (changes) { console.log('STOP HAND', color, " - ", this.fingers, this.distance, this.rotation); },
+					move: function (changes) { console.log('MOVE HAND', color, " - ", this.fingers, this.distance, this.rotation); },
+					transform: function (changes, evt) { console.log('TRANSFORM HAND', color, " - ", this.fingers, this.distance, this.rotation); evt.preventDefault(); },
+					swipe: function (sector, changes) { console.log('SWIPE HAND', color, sector, " - ", this.fingers, this.distance, this.rotation); },
 
 					start: function (evt, finger)
 					{
+
+
 						if (this.fingers < i + 1)
 						{
+							console.log('START HAND', color, this.distance, this.rotation);
 							// evt.preventDefault();
 							// consume this finger here
 							// otherwise other may get them too
