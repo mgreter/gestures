@@ -11,6 +11,8 @@
 (function (jQuery)
 {
 
+	if ( 'msPointerEnabled' in window.navigator ) return;
+
 	(function(prototype)
 	{
 
@@ -25,7 +27,6 @@
 
 			// get touch event options
 			var org = evt.originalEvent,
-			    touches = org.touches || [],
 			    changed = org.changedTouches || [];
 
 			// process all newly added fingers
@@ -38,20 +39,16 @@
 					el: el,
 					id : touch.identifier,
 					type : evt.type,
-					// pageX : touch.pageX,
-					// pageY : touch.pageY,
-					// clientX : touch.clientX,
-					// clientY : touch.clientY,
 					screenX : touch.screenX,
 					screenY : touch.screenY,
-					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
+					timeStamp : evt.timeStamp
 				};
 
 				// create a fingerdown event object
 				var event = new jQuery.Event('fingerdown', {
 
-					finger: finger
+					finger: finger,
+					originalEvent: evt
 
 				})
 
@@ -77,7 +74,6 @@
 
 			// get touch event options
 			var org = evt.originalEvent,
-			    touches = org.touches || [],
 			    changed = org.changedTouches || [];
 
 			// process all newly added fingers
@@ -89,20 +85,16 @@
 				var finger = {
 					id : touch.identifier,
 					type : evt.type,
-					// pageX : touch.pageX,
-					// pageY : touch.pageY,
-					// clientX : touch.clientX,
-					// clientY : touch.clientY,
 					screenX : touch.screenX,
 					screenY : touch.screenY,
-					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
+					timeStamp : evt.timeStamp
 				};
 
 				// create a fingerdown event object
 				var event = new jQuery.Event('fingerup', {
 
-					finger: finger
+					finger: finger,
+					originalEvent: evt
 
 				})
 
@@ -130,7 +122,6 @@
 
 			// get touch event options
 			var org = evt.originalEvent,
-			    touches = org.touches || [],
 			    changed = org.changedTouches || [];
 
 			// create new fingers objects
@@ -143,25 +134,35 @@
 
 				// create new fingers objects
 				// this is stored as move data
-				fingers.push({
+				var finger = {
 					el : el,
 					id : touch.identifier,
 					type : evt.type,
-					// pageX : touch.pageX,
-					// pageY : touch.pageY,
-					// clientX : touch.clientX,
-					// clientY : touch.clientY,
 					screenX : touch.screenX,
 					screenY : touch.screenY,
-					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
-				});
+					timeStamp : evt.timeStamp
+				};
+
+				// create a fingerdown event object
+				var event = new jQuery.Event('fingermove', {
+
+					finger: finger,
+					originalEvent: evt
+
+				})
+
+				// emmit this event on the element
+				// this will bubble up to propably
+				// more gesture handlers, use setup
+				// to decide on each gesture if you
+				// would like to use that finger
+				jQuery(el).trigger(event)
 
 			});
 			// EO all changed fingers
 
 			// dispatch normalized data
-			gesture.fingersMove(fingers, evt);
+			// gesture.fingersMove(fingers, evt);
 
 		}
 		// @@@ EO private fn: handleTouchMoveEvent @@@
@@ -184,7 +185,10 @@
 				jQuery(el)
 					// ... to the touch events
 					.bind('touch' + event, handle)
-					.bind('traptouch' + event, handle)
+					.bind('traptouch' + event, handle);
+				// taken from sources from the internet
+				// if( window.navigator.msPointerEnabled )
+				// { jQuery(el).css('msTouchAction', 'pan-y'); }
 			}
 		});
 

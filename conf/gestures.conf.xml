@@ -88,6 +88,7 @@
 			<input path="src/ocbnet/jquery/event-trap.js" />
 			<input path="src/ocbnet/gestures/mouse.js" />
 			<input path="src/ocbnet/gestures/touch.js" />
+			<input path="src/ocbnet/gestures/pointer.js" />
 
 			<!-- generate different output versions -->
 			<output path="release/rtp.gestures.full.js" target="join" />

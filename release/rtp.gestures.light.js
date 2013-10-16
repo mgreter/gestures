@@ -246,6 +246,8 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					var i = localchanges.length; while (i--)
 					{
 						var finger = localchanges[i];
+						jQuery(elements[e]).triggerHandler
+						( new jQuery.Event('fingermove', { finger: finger }) )
 						gesture.finger[finger.id] = finger;
 					}
 
@@ -268,6 +270,9 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					    sy = gesture.start.center.y,
 					    deltaX = Math.abs(mx - sx),
 					    deltaY = Math.abs(my - sy);
+
+					jQuery(elements[e]).triggerHandler
+					( new jQuery.Event('handmove', { gesture: gesture, fingers: localchanges }) )
 
 					// call the move function on the gesture object
 					if (jQuery.isFunction(handlers.move))
@@ -298,6 +303,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 						{
 							// call the move function on the handlers object
 							handlers.swipe.call(gesture, gesture.swipeSector, localchanges, evt);
+
+							jQuery(elements[e]).triggerHandler
+							( new jQuery.Event('handswipe', { gesture: gesture, fingers: localchanges }) )
+
 						}
 						// EO if swiping
 
@@ -307,6 +316,9 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					// call the transform function on the handlers object
 					if (jQuery.isFunction(handlers.transform))
 					{ handlers.transform.call(gesture, localchanges, evt); }
+
+					jQuery(elements[e]).triggerHandler
+					( new jQuery.Event('handtransform', { gesture: gesture, fingers: localchanges }) )
 
 				}
 				// check for local changes
@@ -340,6 +352,9 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				// call the stop function on gesture
 				if (jQuery.isFunction(handlers.stop))
 				{ handlers.stop.call(gesture, finger, evt); }
+
+				jQuery(el).triggerHandler
+				( new jQuery.Event('handstop', { gesture: gesture, finger: finger }) )
 
 				// calculate status of this gesture
 				gesture.stop = {
@@ -864,7 +879,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				jQuery(el)
 					// ... to the touch events
 					.bind('touch' + event, handle)
-					.bind('traptouch' + event, handle)
+					.bind('traptouch' + event, handle);
+				// taken from sources from the internet
+				// if( window.navigator.msPointerEnabled )
+				// { jQuery(el).css('msTouchAction', 'pan-y'); }
 			}
 		});
 

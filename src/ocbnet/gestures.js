@@ -61,8 +61,9 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		// bind ...
 		jQuery(el)
 			// ... to our custom finger events
-			.bind('fingerup', jQuery.proxy(this.fingerUp, this))
+			// .bind('fingerup', jQuery.proxy(this.fingerUp, this))
 			.bind('fingerdown', jQuery.proxy(this.fingerDown, this))
+			.bind('fingermove', jQuery.proxy(this.fingerMove, this))
 			// do not allow dragging of any gesture elements
 			.bind('dragstart', function () { return false; })
 
@@ -103,15 +104,17 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 			// get original event object
 			var original = evt.originalEvent;
 
+//			console.log('bubble down', original.data);
+
 			// check if this event has already
 			// been handled by this gesture handler
 			// IE 7 only preserves strings for data
-			if (!original.data)
+			// if (!original.data)
 			{
 
 				// remember that we already consumed
 				// this event to emit gesture events
-				original.data = true;
+				// original.data = true;
 
 				// get the normalized event type string
 				var type = evt.type.replace(/^trap/, '');
@@ -121,6 +124,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				{
 					// call the registered event handler
 					this.handler[type].apply(this, arguments);
+
 				}
 				else
 				{
@@ -140,19 +144,27 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 
 
 			// get local variables
-			var el = jQuery(evt.currentTarget),
+			var rv = true,
+			    el = jQuery(evt.currentTarget),
 			    finger = evt.finger,
 			    gesture = el.data('gesture'),
 			    handlers = gesture.handlers;
 
 			// check if the finger should be taken for this gesture
+			// we need to call this in relation the the current gesture
+			// since this is related to the dom node the event is currently at
+			// we cannot attach this information to the event directly
 			// XXX - maybe there is a better way to accomplish this
+			if (jQuery.isFunction(handlers.fingerDown))
+			{ rv = handlers.fingerDown.call(gesture, evt, finger); }
+
 			if (
-				jQuery.isFunction(handlers.start)
-					? handlers.start.call(gesture, evt, finger)
-					: handlers.start
+					rv !== false
 			)
 			{
+
+				// check if we should not take it
+				if (evt.isDefaultPrevented()) return;
 
 				// get index of finger in current gesture
 				// this should not happend, but play safe anyway
@@ -200,9 +212,11 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		};
 		// @@@ EO method: fingerDown @@@
 
-		// @@@ method: fingersMove @@@
-		prototype.fingersMove = function (fingers, evt)
+		// @@@ method: fingerMove @@@
+		prototype.fingerMove = function (evt)
 		{
+
+			var fingers = [evt.finger];
 
 			// process all registered elements
 			var e = elements.length; while (e--)
@@ -238,6 +252,9 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					var i = localchanges.length; while (i--)
 					{
 						var finger = localchanges[i];
+						jQuery(elements[e]).triggerHandler
+						( new jQuery.Event('fingermoveXX', { finger: finger,
+					originalEvent: evt }) )
 						gesture.finger[finger.id] = finger;
 					}
 
@@ -260,6 +277,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					    sy = gesture.start.center.y,
 					    deltaX = Math.abs(mx - sx),
 					    deltaY = Math.abs(my - sy);
+
+					jQuery(elements[e]).triggerHandler
+					( new jQuery.Event('handmove', { gesture: gesture, fingers: localchanges,
+					originalEvent: evt }) )
 
 					// call the move function on the gesture object
 					if (jQuery.isFunction(handlers.move))
@@ -290,6 +311,11 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 						{
 							// call the move function on the handlers object
 							handlers.swipe.call(gesture, gesture.swipeSector, localchanges, evt);
+
+							jQuery(elements[e]).triggerHandler
+							( new jQuery.Event('handswipe', { gesture: gesture, fingers: localchanges,
+					originalEvent: evt }) )
+
 						}
 						// EO if swiping
 
@@ -300,13 +326,17 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					if (jQuery.isFunction(handlers.transform))
 					{ handlers.transform.call(gesture, localchanges, evt); }
 
+					jQuery(elements[e]).triggerHandler
+					( new jQuery.Event('handtransform', { gesture: gesture, fingers: localchanges,
+					originalEvent: evt }) )
+
 				}
 				// check for local changes
 
 			}
 			// EO process all elements
 		};
-		// @@@ EO method: fingersMove @@@
+		// @@@ EO method: fingerMove @@@
 
 
 		// @@@ method: fingerUp @@@
@@ -332,6 +362,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				// call the stop function on gesture
 				if (jQuery.isFunction(handlers.stop))
 				{ handlers.stop.call(gesture, finger, evt); }
+
+				jQuery(el).triggerHandler
+				( new jQuery.Event('handstop', { gesture: gesture, finger: finger,
+					originalEvent: evt }) )
 
 				// calculate status of this gesture
 				gesture.stop = {
@@ -559,6 +593,8 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 
 		});
 		// EO each element
+
+		return this;
 
 	}
 	// @@@ EO jQuery fn: gesture @@@

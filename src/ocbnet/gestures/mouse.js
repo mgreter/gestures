@@ -11,6 +11,9 @@
 (function (jQuery)
 {
 
+	if ( 'ontouchstart' in window ) return;
+	if ( 'msPointerEnabled' in window.navigator ) return;
+
 	(function(prototype)
 	{
 
@@ -112,24 +115,36 @@
 				// but for all on the whole surface
 				for (var id in gesture.surface)
 				{
-					fingers.push({
+					var finger = {
 						el : el,
 						id : id,
 						type : evt.type,
-						// pageX : evt.pageX,
-						// pageY : evt.pageY,
-						// clientX : evt.clientX,
-						// clientY : evt.clientY,
 						screenX : evt.screenX,
 						screenY : evt.screenY,
 						timeStamp : evt.timeStamp,
-						originalEvent : evt.originalEvent
-					});
+						originalEvent : evt
+					};
+
+				// create a fingerdown event object
+				var event = new jQuery.Event('fingermove', {
+
+					finger: finger,
+					originalEvent: evt
+
+				})
+
+				// emmit this event on the element
+				// this will bubble up to propably
+				// more gesture handlers, use setup
+				// to decide on each gesture if you
+				// would like to use that finger
+				jQuery(el).trigger(event)
+					// dispatch normalized data
+					// gesture.fingersMove([finger], evt);
+
 				}
 				// EO each finger
 
-				// dispatch normalized data
-				gesture.fingersMove(fingers, evt);
 
 			}
 			// @@@ EO private fn: handleMouseMoveEvent @@@
@@ -192,20 +207,17 @@
 					el : el,
 					id : evt.which,
 					type : evt.type,
-					// pageX : evt.pageX,
-					// pageY : evt.pageY,
-					// clientX : evt.clientX,
-					// clientY : evt.clientY,
 					screenX : evt.screenX,
 					screenY : evt.screenY,
 					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
+					originalEvent : evt
 				}
 
 				// create a fingerdown event object
 				var event = new jQuery.Event('fingerdown', {
 
-					finger: finger
+					finger: finger,
+					originalEvent: evt
 
 				})
 
@@ -290,7 +302,7 @@
 					    handler = data.handler;
 
 					// get the gesture data from element
-					var hand = jQuery(el).data('hand');
+					var gesture = jQuery(el).data('gesture');
 
 					// create new finger object
 					// this is stored as stop data
@@ -305,16 +317,19 @@
 						// clientY : evt.clientY,
 						screenX : evt.screenX,
 						screenY : evt.screenY,
-						timeStamp : evt.timeStamp,
-						originalEvent : evt.originalEvent
+						timeStamp : evt.timeStamp
 					}
 
 					// create a fingerdown event object
 					var event = new jQuery.Event('fingerup', {
 
-						finger: finger
+						finger: finger,
+						originalEvent: evt,
+						currentTarget: el
 
 					})
+
+					gesture.fingerUp.call(gesture, event);
 
 					// emmit this event on the element
 					// this will bubble up to propably
