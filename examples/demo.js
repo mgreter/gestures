@@ -1,119 +1,66 @@
 jQuery(function()
 {
 
-
-	jQuery('#green, #blue').bind('touchstart', function(evt)
-	{
-		/*
-		evt.stopImmediatePropagation();
-		evt.preventDefault();
-		return false;
-		*/
-	});
-
 	var colors = ['red', 'blue', 'green'];
 
 	jQuery.each(colors, function (i, color)
 	{
 
-
 		jQuery('#' + color)
 
-		// .bind('fingermove')
-		// .bind('fingerup')
-		// .bind('handmove')
-		// .bind('handstart')
-		// .bind('handstop')
-
-		.bind('fingermove', function (evt)
-		{
-		})
-
-		.bind('handswipe', function (evt, asd)
-		{
-			if (evt.gesture.fingers != 1) return;
-			if (evt.gesture.maximum != 1) return;
-		})
-
-		.bind('fingerdown', function (evt, asd)
+		// called to decide if finger is wanted
+		// some elements may be satisfied with one finger
+		// they can also decide if the want others to have it
+		// or if further fingers should be
+		.bind('handstart', function (evt)
 		{
 
-		//	evt.preventDefault();
-			// consume this finger here
-			// otherwise other may get them too
-		//	evt.stopPropagation();
-
-		})
-/*
-		.gesture(function (hand, finger)
-		{
-
-// example 1
-// swipe with one finger
-// zoom with two fingers
-// releasing one finger
-// switches back to swipe
-// or do ignore afterwards
-// how to implement that?
-
-			finger.on('move', function() { });
-			finger.filter('<3').('move', function() { });
-			hand.on('move', function() { });
-			hand.filter(2).on('move', function() { });
-			hand.on('swipe', function() { });
-			hand.filter(2).on('swipe', function() { });
-
-		})
-*/
-		.bind('fingerdown', function (evt)
-		{
-
-			// evt.preventDefault();
-			// evt.stopPropagation();
-			// evt.stopImmediatePropagation();
-
-		})
-
-		.gesture({
-
-			stop: function (changes) { console.log('STOP HAND', color, " - ", this.fingers, this.distance, this.rotation); },
-//			move: function (changes) { console.log('MOVE HAND', color, " - ", this.fingers, this.distance, this.rotation); },
-			//swipe: function (sector, changes) { console.log('SWIPE HAND', color, sector, " - ", this.fingers, this.distance, this.rotation); },
-//			transform: function (changes, evt) { console.log('TRANSFORM HAND', color, " - ", this.fingers, this.distance, this.rotation); evt.preventDefault(); },
-
-			fingerDown: function (evt, finger)
+			// every field can take one finger
+			if (evt.gesture.fingers == 0)
 			{
-
-				// evt.preventDefault();
-
-				if (this.fingers == 1)
+				// do nothing (take the finger)
+			}
+			// this gesture has already one finger
+			else if (evt.gesture.fingers == 1)
+			{
+				// special case on the blue rect
+				if (evt.currentTarget.id == 'blue')
 				{
+					// do not allow more fingers
+					// but do not stop propagating
+					evt.preventDefault();
+				}
+				else
+				{
+					// consume this finger
 					evt.stopPropagation();
 				}
-				if (this.fingers > 1)
-				{
-					return false;
-				}
+			}
+			// there are already two fingers
+			else if (evt.gesture.fingers > 1)
+			{
+				// do not take more fingers
+				// but do not stop propagating
+				evt.preventDefault();
 			}
 
 		})
 
-		var events = ['fingerup', 'fingertap', 'fingersmove', 'fingerdown']; //
+		// call gesture and pass config options
+		// needed to call to dispatch gesture events
+		.gesture({
+			swipeSectors: 2,
+			swipeMinDistance: 10,
+			native: { panY: true }
+		})
 
-		jQuery.each(events, function (n, event)
-		{
-			jQuery('#' + color).bind(event, function (evt)
-			{
-				console.log(evt.type + ' on ' + color + ' @ ' + evt.timeStamp + ' (' + evt.taps + ')');
-			});
-		});
+		.bind('handstop', function (evt) { console.log('STOP', color); })
+		.bind('handstart', function (evt) { console.log('START', color); })
+		// .bind('handmove', function (evt) { console.log('MOVE', color); })
+		// .bind('handswipe', function (evt) { console.log('SWIPE', color); })
+		// .bind('handtranform', function (evt) { console.log('TRANFORM', color); })
+
 	});
-
-
-
-
-
-	jQuery('#log').html('');
 
 
 	jQuery(document).bind('contextmenu', function (evt)
@@ -171,36 +118,6 @@ jQuery(function()
 
 });
 
-var oldlog = console.log;
-var logs = [], logger = function ()
-{
-	// oldlog.apply(this, arguments);
-}
-
-
-console.logger = logger;
-console.logall = oldlog;
-
-console.breaker = function ()
-{
-jQuery('#log').html('<hr>' + jQuery('#log').html())
-}
-
-console.log = function (asd)
-{
-	// if (logger) logger.apply(this, arguments);
-
-	logs.unshift([].join.call(arguments, ', '));
-
-	var now = new Date();
-
-	while (logs.length > 25) logs.pop();
-
-	logs[0] = now.getTime() + ': ' + logs[0];
-
-	jQuery('#log').html('<pre>' + logs.join('<br>') + '</pre>')
-}
-
 jQuery(function()
 {
 
@@ -211,7 +128,11 @@ jQuery(function()
 		{
 			case 'object':
 				if (typeof obj.id != 'undefined')
-				{ return '{ID:' + obj.id + '}'; }
+				{
+					if (typeof obj.x != 'undefined' && typeof obj.y != 'undefined')
+					{ return ' (' + obj.x + '/' + obj.y + ')'; }
+					return '{ID:' + obj.id + '}';
+				}
 				else return obj;
 			break;
 			default:
@@ -226,16 +147,17 @@ jQuery(function()
 
 		html = div + '<br>';
 
-		var hand = jQuery('#' + div).data('gesture');
+		var gesture = jQuery('#' + div).data('gesture');
 
-var attr = ['fingers', 'finger', 'el', 'ordered', 'swipeSector', 'rotation', 'distance'];
-		if (hand)
+		var attr = ['fingers', 'finger', 'el', 'ordered', 'center', 'rotation', 'distance', 'swipeSector'];
+
+		if (gesture)
 		{
 			for (var i in attr)
 			{
 
 				var i = attr[i];
-				var val = hand[i];
+				var val = gesture[i];
 
 				if (jQuery.isArray(val))
 				{
@@ -285,5 +207,3 @@ var attr = ['fingers', 'finger', 'el', 'ordered', 'swipeSector', 'rotation', 'di
 	}, 20);
 
 });
-
-// console.log = old;

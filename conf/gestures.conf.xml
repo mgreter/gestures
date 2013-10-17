@@ -61,8 +61,8 @@
 
 			<!-- include core javascript files -->
 			<input path="src/ocbnet/gestures.js" />
-			<input path="src/ocbnet/jquery/event-trap.js" />
 			<input path="src/ocbnet/gestures/touch.js" />
+			<input path="src/ocbnet/gestures/pointer.js" />
 
 			<!-- generate different output versions -->
 			<output path="release/rtp.gestures.light.js" target="join" />
@@ -85,7 +85,6 @@
 
 			<!-- include core javascript files -->
 			<input path="src/ocbnet/gestures.js" />
-			<input path="src/ocbnet/jquery/event-trap.js" />
 			<input path="src/ocbnet/gestures/mouse.js" />
 			<input path="src/ocbnet/gestures/touch.js" />
 			<input path="src/ocbnet/gestures/pointer.js" />
@@ -93,6 +92,34 @@
 			<!-- generate different output versions -->
 			<output path="release/rtp.gestures.full.js" target="join" />
 			<output path="release/rtp.gestures.full.min.js" target="compile" />
+
+		</js>
+
+	</merge>
+
+	<!-- main merge operations -->
+	<merge id="exp" disabled="false">
+
+		<js id="exp" step="exp" >
+
+			<!-- include common header file -->
+			<prepend path="src/header.js" />
+
+			<!-- include common header file -->
+			<prepend path="src/header.js" />
+
+			<!-- include experimental jquery event trapper -->
+			<input path="src/ocbnet/jquery/event-trap.js" />
+
+			<!-- include core javascript files -->
+			<input path="src/ocbnet/gestures.js" />
+			<input path="src/ocbnet/gestures/mouse.js" />
+			<input path="src/ocbnet/gestures/touch.js" />
+			<input path="src/ocbnet/gestures/pointer.js" />
+
+			<!-- generate different output versions -->
+			<output path="release/rtp.gestures.exp.js" target="join" />
+			<output path="release/rtp.gestures.exp.min.js" target="compile" />
 
 		</js>
 

@@ -38,7 +38,7 @@
 				// this will bubble up so you can
 				// handle that trapped event anyway
 				// XXX: Maybe call on parent instead
-				jQuery(evt.target).trigger(evt);
+				jQuery(evt.currentTarget).parent().trigger(evt);
 
 				// restore some event attributes
 				evt.type = type; evt.isTrigger = isTrigger;

@@ -23,6 +23,12 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 (function (jQuery)
 {
 
+	// static array
+	var gestures = [];
+
+	// static counter
+	var count = 0;
+
 	// store all fingers down at any time
 	// used to store some static information
 	// each finger can be involved in multiple
@@ -30,22 +36,35 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 	// the associated finger data only with the id
 	var surface = {};
 
-	// store all elements that have some gesture attached
-	// needed only to dispatch mousemove events to all nodes
-	var elements = [];
-
-	// in how many angle sectors should swipes be allowed
-	var swipeSectors = 2, swipeMinDistance = 20;
-
 	// @@@ Object Constructor @@@
-	OCBNET.Gestures = function (el)
+	OCBNET.Gestures = function (el, config)
 	{
 
 		// dom element
 		this.el = el;
 
-		// attached fingers
-		this.hands = [];
+		// create initial configuration
+		this.config = jQuery.extend({
+
+			// native features
+			// mostly for pan-y
+			native: {},
+
+			// in how many angle sectors
+			// should swipes be distributed
+			swipeSectors: 2,
+
+			// minimum distance to find
+			// the appropriate swipe sector
+			swipeMinDistance: 20
+
+		}, config, true);
+
+		// assign a static id
+		this.id = count ++;
+
+		// add our instance
+		gestures.push(this);
 
 		// count fingers
 		this.fingers = 0;
@@ -56,45 +75,112 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		// attached fingers
 		this.finger = {};
 
-		// fingers in order
+		// finger ids in order
 		this.ordered = [];
-
-		// event handlers
-		this.handlers = {};
 
 		// link to static arrays
 		this.surface = surface;
-		this.elements = elements;
 
 		// bind ...
 		jQuery(el)
-			// ... to our custom finger events
-			.bind('fingerup', jQuery.proxy(this.fingerUp, this))
-			.bind('fingerdown', jQuery.proxy(this.fingerDown, this))
 			// do not allow dragging of any gesture elements
 			.bind('dragstart', function () { return false; })
 
 		// call all further initializers (mouse/touch)
 		for (var i = 0, l = this.init.length; i < l; i++)
-		{ this.init[i].apply(this, arguments); }
-
-		// add element to array
-		elements.push(jQuery(el));
+		{
+			// binds specific event handlers
+			this.init[i].apply(this, arguments);
+		}
 
 	};
 	// @@@ EO Object Constructor @@@
+
+	// @@@ finger got up somewhere on surface @@@
+	OCBNET.Gestures.fingerup = function (evt)
+	{
+		// process all registered gestures
+		var g = gestures.length; while (g--)
+		{
+			// does nothing for unknown finger
+			gestures[g].fingerUp(evt);
+		}
+	};
+	// @@@ EO: fingerup @@@
+
+	// @@@ move all fingers on surface @@@
+	OCBNET.Gestures.fingermove = function (evt)
+	{
+		// process all registered gestures
+		var g = gestures.length; while (g--)
+		{
+				// call move for this finger
+			gestures[g].fingerMove(evt);
+		}
+	};
+
+
+	// @@@ move all fingers on surface @@@
+	OCBNET.Gestures.fingersmove = function (evt)
+	{
+		// process all registered gestures
+		var g = gestures.length; while (g--)
+		{
+			// now process all finger ids
+			for (var id in gestures[g].finger)
+			{
+				// create new fingermove event object
+				var event = jQuery.Event('fingermove',
+				{
+					id : id,
+					x : evt.x,
+					y : evt.y,
+					originalEvent: evt
+				});
+				// call move for each finger
+				gestures[g].fingerMove(event);
+			}
+		}
+	};
+	// @@@ EO move all fingers on surface @@@
+
+
+	// @@@ remove all fingers on surface @@@
+	OCBNET.Gestures.fingersup = function (evt)
+	{
+		// process all registered gestures
+		var g = gestures.length; while (g--)
+		{
+			// now process all finger ids
+			for (var id in gestures[g].finger)
+			{
+				// create new fingermove event object
+				var event = jQuery.Event('fingerup',
+				{
+					id : id,
+					x : evt.x,
+					y : evt.y,
+					originalEvent: evt
+				});
+				// call move for each finger
+				gestures[g].fingerUp(event);
+			}
+		}
+	};
+	// @@@ EO remove all fingers on surface @@@
+
 
 	// @@@ Object Constructor @@@
-	OCBNET.Gestures.Hand = function ()
+	OCBNET.Gestures.Finger = function (opt)
 	{
+
+		this.id = opt.id;
+		this.x = opt.x;
+		this.y = opt.y;
+
 	};
 	// @@@ EO Object Constructor @@@
 
-	// @@@ Object Constructor @@@
-	OCBNET.Gestures.Finger = function ()
-	{
-	};
-	// @@@ EO Object Constructor @@@
 
 	// @@@ Class declaration @@@
 	(function (prototype)
@@ -102,277 +188,256 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 
 		// create objects on prototype
 		prototype.init = [];
-		prototype.handler = {};
 
-		// @@@ method: handle @@@
-		prototype.handle = function (evt)
-		{
-
-			// get original event object
-			var original = evt.originalEvent;
-
-			// check if this event has already
-			// been handled by this gesture handler
-			// IE 7 only preserves strings for data
-			if (!original.data)
-			{
-
-				// remember that we already consumed
-				// this event to emit gesture events
-				original.data = true;
-
-				// get the normalized event type string
-				var type = evt.type.replace(/^trap/, '');
-
-				// check for event handler
-				if (this.handler[type])
-				{
-					// call the registered event handler
-					this.handler[type].apply(this, arguments);
-				}
-				else
-				{
-					// throw an error if the type is not valid
-					throw('Gesture cannot handle unknown event', type)
-				}
-
-			}
-			// EO if already consumed
-
-		}
-		// @@@ method: handle @@@
 
 		// @@@ method: fingerDown @@@
 		prototype.fingerDown = function (evt)
 		{
 
+			// for optimizer
+			var gesture = this;
 
-			// get local variables
-			var el = jQuery(evt.currentTarget),
-			    finger = evt.finger,
-			    gesture = el.data('gesture'),
-			    handlers = gesture.handlers;
+			// create a new finger (take values from event)
+			var finger = new OCBNET.Gestures.Finger(evt);
 
-			// check if the finger should be taken for this gesture
-			// XXX - maybe there is a better way to accomplish this
-			if (
-				jQuery.isFunction(handlers.start)
-					? handlers.start.call(gesture, evt, finger)
-					: handlers.start
-			)
+			// create a new finger down event
+			var event = new jQuery.Event('handstart',
+			{
+				finger: finger,
+				gesture: gesture,
+				originalEvent: evt
+			});
+
+			// only call event on the given element
+			// this means the event will not bubble
+			jQuery(gesture.el).triggerHandler(event);
+
+			// abort this hand gesture right now
+			if (event.isDefaultPrevented()) return;
+
+			// finger not yet known
+			if (!this.hasFinger(finger.id))
 			{
 
-				// get index of finger in current gesture
-				// this should not happend, but play safe anyway
-				var idx = jQuery.inArray(finger.id, gesture.ordered);
-
-				// finger not yet known
-				if (idx == -1)
-				{
-
-					// increase finger fingers
-					gesture.fingers ++;
-
-					// remember maximum fingers on gesture
-					if (gesture.maximum < gesture.fingers)
-					{ gesture.maximum = gesture.fingers; }
-
-					// reset cached data
-					gesture.cached = {};
-
-					// add finger to ordered list
-					gesture.ordered.push(finger.id);
-
-					// attach finger to gesture
-					gesture.finger[finger.id] = finger;
-
-					// attach finger to surface
-					surface[finger.id] = finger;
-
-					// calculate status of this gesture
-					gesture.start = {
-						center : gesture.getCenter(),
-						rotation : gesture.getRotation(),
-						distance : gesture.getDistance()
-					}
-
-					// create and init a copy for move
-					gesture.move = jQuery.extend({}, gesture.start);
-
+				// calculations
+				gesture.start = {
+					center : gesture.getCenter(),
+					rotation : gesture.getRotation(),
+					distance : gesture.getDistance()
 				}
-				// EO if not used
+
+				// offset position
+				gesture.offset = { x : 0, y : 0 }
+				// get the center from last move
+				gesture.center = gesture.start.center;
+				// offset rotation and distance
+				gesture.rotation = 0; gesture.distance = 0;
+
+				// increase counter
+				this.fingers ++;
+
+				// remember maximum fingers on gesture
+				if (this.maximum < this.fingers)
+				{ this.maximum = this.fingers; }
+
+				// add finger to ordered list
+				this.ordered.push(finger.id);
+
+				// attach finger to gesture
+				this.finger[finger.id] = finger;
+
+				// attach finger to surface
+				surface[finger.id] = finger;
+
+				// calculate status of this gesture
+				this.start = {
+					center : this.getCenter(),
+					rotation : this.getRotation(),
+					distance : this.getDistance()
+				}
+
+				// create and init a copy for move
+				this.move = jQuery.extend({}, this.start);
 
 			}
-			// EO if finger taken
+			// EO if not used
 
-		};
+		}
 		// @@@ EO method: fingerDown @@@
 
-		// @@@ method: fingersMove @@@
-		prototype.fingersMove = function (fingers, evt)
+		// @@@ private fn: fingerMove @@@
+		prototype.fingerMove = function(evt)
 		{
 
-			// process all registered elements
-			var e = elements.length; while (e--)
+			// init variables
+			var id = evt.id,
+			    gesture = this;
+
+			// check that finger is known
+			if (gesture.hasFinger(id))
 			{
 
-				// collect local changes
-				var localchanges = [];
+				// get the actual finger instance
+				var finger = gesture.getFinger(id);
 
-				// get the gesture data from local element
-				var gesture = elements[e].data('gesture'),
-				    handlers = gesture.handlers;
+				// update position
+				finger.x = evt.x;
+				finger.y = evt.y;
 
-				// check all fingers on the gesture for changes
-				for (var localid in gesture.finger)
-				{
-					// process all fingers on current move
-					var l = fingers.length; while (l--)
+				// calculations
+				gesture.move = {
+					center : gesture.getCenter(),
+					rotation : gesture.getRotation(),
+					distance : gesture.getDistance()
+				}
+
+				// offset position
+				gesture.offset = {
+					x : gesture.move.center.x - gesture.start.center.x,
+					y : gesture.move.center.y - gesture.start.center.y
+				}
+				// get the center from last move
+				gesture.center = gesture.move.center;
+				// offset rotation and distance
+				gesture.rotation = gesture.move.rotation - gesture.start.rotation;
+				gesture.distance = gesture.move.distance - gesture.start.distance;
+
+				// detect swipes to dispatch by offsets
+				var deltaX = Math.abs(gesture.offset.x),
+				    deltaY = Math.abs(gesture.offset.y);
+
+				// trigger hand move event
+				// event does not bubbles up
+				jQuery(gesture.el).triggerHandler
+				(
+					new jQuery.Event('handmove',
 					{
-						// use changed finger if on gesture
-						if (fingers[l].id == localid)
-						{ localchanges.push(fingers[l]); }
+						finger: finger,
+						gesture: gesture,
+						originalEvent: evt
+					})
+				);
+
+				// check if there is a swipe movement
+				if (typeof gesture.swipeSector == 'undefined')
+				{
+					// check if we have the minimum move distance reached for a swipe
+					if (Math.sqrt(deltaX*deltaX + deltaY*deltaY) > this.config.swipeMinDistance)
+					{
+						// determine in which sector the swipe was
+						// get the rotation of the swipe to match to sector
+						var angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+						gesture.swipeSector = parseInt(angle / 90 * this.config.swipeSectors, 10);
+						gesture.swipeSector = Math.min(gesture.swipeSector, this.config.swipeSectors - 1);
 					}
 				}
-				// EO check fingers on gesture
+				// EO if no swipe yet
 
-				// check if this gesture has changes
-				if (localchanges.length)
+				// check if swipe has been started
+				// always keep swipe in same sector
+				if (typeof gesture.swipeSector != 'undefined')
 				{
 
-					delete gesture.cached.center;
-
-					// update the changed fingers on gesture
-					var i = localchanges.length; while (i--)
-					{
-						var finger = localchanges[i];
-						jQuery(elements[e]).triggerHandler
-						( new jQuery.Event('fingermove', { finger: finger }) )
-						gesture.finger[finger.id] = finger;
-					}
-
-					// calculate status of this gesture
-					gesture.move = {
-						center : gesture.getCenter(),
-						rotation : gesture.getRotation(),
-						distance : gesture.getDistance()
-					}
-
-					// calculate status of this gesture
-					gesture.center = gesture.move.center;
-					gesture.rotation = gesture.move.rotation;
-					gesture.distance = gesture.move.distance;
-
-					// detect swipes to dispatch by center offsets
-					var mx = gesture.move.center.x,
-					    my = gesture.move.center.y,
-					    sx = gesture.start.center.x,
-					    sy = gesture.start.center.y,
-					    deltaX = Math.abs(mx - sx),
-					    deltaY = Math.abs(my - sy);
-
-					jQuery(elements[e]).triggerHandler
-					( new jQuery.Event('handmove', { gesture: gesture, fingers: localchanges }) )
-
-					// call the move function on the gesture object
-					if (jQuery.isFunction(handlers.move))
-					{ handlers.move.call(gesture, localchanges, evt); }
-
-					// check if there is a swipe handler
-					if (jQuery.isFunction(handlers.swipe))
-					{
-
-						// check if there is a swipe movement
-						if (typeof gesture.swipeSector == 'undefined')
+					// trigger hand swipe event
+					// event does not bubbles up
+					jQuery(gesture.el).triggerHandler
+					(
+						new jQuery.Event('handswipe',
 						{
-							// check if we have the minimum move distance reached for a swipe
-							if (Math.sqrt(deltaX*deltaX + deltaY*deltaY) > swipeMinDistance)
-							{
-								// determine in which sector the swipe was
-								// get the rotation of the swipe to match to sector
-								var angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-								gesture.swipeSector = parseInt(angle / 90 * swipeSectors, 10);
-								gesture.swipeSector = Math.min(gesture.swipeSector, swipeSectors - 1);
-							}
-						}
-						// EO if no swipe yet
-
-						// check if swipe has been started
-						// always keep swipe in same sector
-						if (typeof gesture.swipeSector != 'undefined')
-						{
-							// call the move function on the handlers object
-							handlers.swipe.call(gesture, gesture.swipeSector, localchanges, evt);
-
-							jQuery(elements[e]).triggerHandler
-							( new jQuery.Event('handswipe', { gesture: gesture, fingers: localchanges }) )
-
-						}
-						// EO if swiping
-
-					}
-					// EO if swipe handler
-
-					// call the transform function on the handlers object
-					if (jQuery.isFunction(handlers.transform))
-					{ handlers.transform.call(gesture, localchanges, evt); }
-
-					jQuery(elements[e]).triggerHandler
-					( new jQuery.Event('handtransform', { gesture: gesture, fingers: localchanges }) )
-
+							finger: finger,
+							gesture: gesture,
+							originalEvent: evt
+						})
+					);
 				}
-				// check for local changes
+				// EO if swiping
+
+				// check multifinger gesture
+				if (gesture.fingers > 1)
+				{
+					// trigger hand transform event
+					// event does not bubbles up
+					jQuery(gesture.el).triggerHandler
+					(
+						new jQuery.Event('handtransform',
+						{
+							finger: finger,
+							gesture: gesture,
+							originalEvent: evt
+						})
+					);
+				}
+				// EO if multifinger gesture
 
 			}
-			// EO process all elements
-		};
-		// @@@ EO method: fingersMove @@@
+			// EO if finger is known
+
+		}
+		// @@@ EO method: fingerMove @@@
 
 
 		// @@@ method: fingerUp @@@
 		prototype.fingerUp = function (evt)
 		{
 
-			// get local variables
-			var el = jQuery(evt.currentTarget),
-			    finger = evt.finger,
-			    gesture = el.data('gesture'),
-			    handlers = gesture.handlers;
-
-			// get index of finger in current gesture
-			var idx = jQuery.inArray(finger.id, gesture.ordered)
+			// init variables
+			var id = evt.id,
+			    gesture = this;
 
 			// finger was used
-			if (idx != -1)
+			if (gesture.hasFinger(id))
 			{
 
-				// reset cached data
-				// gesture.cached = {};
+				// get the actual finger instance
+				var finger = gesture.getFinger(id);
 
-				// call the stop function on gesture
-				if (jQuery.isFunction(handlers.stop))
-				{ handlers.stop.call(gesture, finger, evt); }
+				// update position
+				finger.x = evt.x;
+				finger.y = evt.y;
 
-				jQuery(el).triggerHandler
-				( new jQuery.Event('handstop', { gesture: gesture, finger: finger }) )
-
-				// calculate status of this gesture
+				// calculations
 				gesture.stop = {
 					center : gesture.getCenter(),
 					rotation : gesture.getRotation(),
 					distance : gesture.getDistance()
 				}
 
-				// calculate status of this gesture
+				// offset position
+				gesture.offset = {
+					x : gesture.stop.center.x - gesture.start.center.x,
+					y : gesture.stop.center.y - gesture.start.center.y
+				}
+				// get the center from last move
 				gesture.center = gesture.stop.center;
-				gesture.rotation = gesture.stop.rotation;
-				gesture.distance = gesture.stop.distance;
+				// offset rotation and distance
+				gesture.rotation = gesture.stop.rotation - gesture.start.rotation;
+				gesture.distance = gesture.stop.distance - gesture.start.distance;
 
-				// stop swipe movement
-				delete gesture.swipeSector;
+				// create a new finger down event
+				var event = new jQuery.Event('handstop',
+				{
+					finger: finger,
+					gesture: gesture
+				});
+
+				// only call event on the given element
+				// this means the event will not bubble
+				jQuery(gesture.el).triggerHandler(event);
+
+				// abort this hand gesture right now
+				// if (finger.isDefaultPrevented()) return;
 
 				// decrease fingers
 				gesture.fingers --;
+
+				// stop swipe movement
+				delete gesture.offset;
+				delete gesture.rotation;
+				delete gesture.distance;
+				delete gesture.swipeSector;
+
+				// get index of finger in current gesture
+				var idx = jQuery.inArray(finger.id, gesture.ordered)
 
 				// remove finger from order array
 				gesture.ordered.splice(idx, 1);
@@ -394,46 +459,25 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		prototype.getCenter = function ()
 		{
 
-			// check if cached value exists
-			if (this.cached.center)
-			{ return this.cached.center; }
-
 			// create center object
-			var center = {};
-
-			// init variables to calculate the center point of all fingers
-			var attrs = ['page', 'client', 'screen'], axes = ['X', 'Y'];
+			var center = { x : 0, y : 0 };
 
 			// sum up all attributes
-			for (var localid in this.finger)
+			for (var id in this.finger)
 			{
 				// get finger from this gesture
-				var finger = this.finger[localid];
-				// process all attributes
-				var n = attrs.length; while (n--)
-				{
-					// process all aces
-					var i = axes.length; while (i--)
-					{
-						// combine attribute string
-						var attr = attrs[n] + axes[i];
-						// initialize attribute on center object
-						if (!center[attr]) { center[attr] = 0; }
-						// add the current point and divide by fingers
-						center[attr] += finger[attr] / this.fingers;
-					}
-					// EO each axis
-				}
-				// EO each attribute
+				var finger = this.finger[id];
+				// sum up all finger positions
+				center.x += finger.x; center.y += finger.y;
 			}
 			// EO each finger
 
 			// normalize x/y value
-			center.x = center.screenX;
-			center.y = center.screenY;
-
-			// remember the cached value
-			this.cached.center = center;
+			if (this.fingers)
+			{
+				center.x /= this.fingers;
+				center.y /= this.fingers;
+			}
 
 			// return center
 			return center;
@@ -441,13 +485,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		};
 		// @@@ EO method: getCenter @@@
 
+
 		// @@@ method: getRotation @@@
 		prototype.getRotation = function ()
 		{
-
-			// check if cached value exists
-			if (this.cached.rotation)
-			{ return this.cached.rotation; }
 
 			// need at least 2 fingers
 			if (this.fingers < 2) return 0;
@@ -475,8 +516,8 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					    n_finger = this.finger[n_id];
 
 					// get the distance on each axis
-					x += (n_finger.screenX - i_finger.screenX);
-					y += (n_finger.screenY - i_finger.screenY);
+					x += (n_finger.x - i_finger.x);
+					y += (n_finger.y - i_finger.y);
 
 				}
 				// EO process other fingers
@@ -493,13 +534,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		};
 		// @@@ EO method: getRotation @@@
 
+
 		// @@@ method: getDistance @@@
 		prototype.getDistance = function ()
 		{
-
-			// check if cached value exists
-			if (this.cached.distance)
-			{ return this.cached.distance; }
 
 			// need at least 2 fingers
 			if (this.fingers < 2) return 0;
@@ -527,8 +565,8 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					    n_finger = this.finger[n_id];
 
 					// get the absolute distance on each axis
-					x += Math.abs(n_finger.screenX - i_finger.screenX);
-					y += Math.abs(n_finger.screenY - i_finger.screenY);
+					x += Math.abs(n_finger.x - i_finger.x);
+					y += Math.abs(n_finger.y - i_finger.y);
 
 				}
 				// EO process other fingers
@@ -545,14 +583,32 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 		};
 		// @@@ EO method: getDistance @@@
 
+		// @@@ method: hasFinger @@@
+		prototype.hasFinger = function (id)
+		{
+
+			// return if id is known
+			return id in this.finger;
+
+		}
+		// @@@ EO method: hasFinger @@@
+
+		// @@@ method: hasFinger @@@
+		prototype.getFinger = function (id)
+		{
+
+			// return finger instance
+			return this.finger[id];
+
+		}
+		// @@@ EO method: hasFinger @@@
+
 	})(OCBNET.Gestures.prototype);
 	// @@@ EO Class declaration @@@
 
 
-
-
 	// @@@ jQuery fn: gesture @@@
-	jQuery.fn.gesture = function (handlers)
+	jQuery.fn.gesture = function (config)
 	{
 
 		// process all elements in collection
@@ -568,7 +624,8 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 			{
 
 				// create a new gesture object
-				gesture = new OCBNET.Gestures(el);
+				// also binds start events to el
+				gesture = new OCBNET.Gestures(el, config);
 
 				// store the object on the element
 				jQuery(el).data('gesture', gesture);
@@ -576,122 +633,186 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 			}
 			// EO if gesture not initialised
 
-			// extend the gesture handlers object
-			// maybe change them to event handlers
-			jQuery.extend(gesture.handlers, handlers);
+			// if gesture is initialised
+			else
+			{
+
+				// assertion for config change
+				if (gesture.fingers > 0)
+				{
+					// only allow initial config changes
+					throw('fatal: live config change');
+				}
+
+				// extend the gesture config object
+				jQuery.extend(gesture.config, config, true);
+
+			}
+			// EO if gesture is initialised
 
 		});
 		// EO each element
 
+		// chainable
+		return this;
+
 	}
 	// @@@ EO jQuery fn: gesture @@@
 
+})(jQuery);
+// EO private scope;
+/*
+
+  Copyright (c) Marcel Greter 2012 - OCBNET Gestures 0.0.0
+  This plugin available for use in all personal or commercial projects under both MIT and GPL licenses.
+
+*/
+
+/* @@@@@@@@@@ STATIC CLASS @@@@@@@@@@ */
+
+// create private scope
+(function (jQuery)
+{
+
+	// check for touch features
+	if ( ! ('ontouchstart' in window) ) return;
+	// proper detection for ie10 on desktop (https://github.com/CreateJS/EaselJS/issues/273)
+	if ( window.navigator['msPointerEnabled'] && window.navigator["msMaxTouchPoints"] > 0 ) return;
+
+	// extend class
+	(function(prototype)
+	{
+
+		// bind additional events for gestures
+		prototype.init.push(function (el)
+		{
+
+			// create a closure
+			var closure = this;
+
+			// trap mousedown locally on each element
+			jQuery(el).bind('touchstart', function (evt)
+			{
+
+				// get variables from event
+				var el = evt.currentTarget,
+				    org = evt.originalEvent,
+				    touches = org.changedTouches || [];
+
+				// get the gesture for current element
+				// it should be here, otherwise I don't know
+				// why I would be registered on this element
+				var gesture = jQuery(el).data('gesture');
+
+				// assertion for same object (play safe - dev)
+				if (gesture !== closure) eval("alert('assertion')");
+
+				// process all newly added fingers
+				jQuery(touches).each(function (i, touch)
+				{
+
+					// create new finger down event object
+					// you may use it to cancel event bubbeling
+					var event = new jQuery.Event('fingerdown',
+					{
+						type : 'touch',
+						x : touch.screenX,
+						y : touch.screenY,
+						id : touch.identifier,
+						originalEvent : evt
+					});
+
+					// pass on to gesture handler
+					gesture.fingerDown(event)
+
+				});
+
+			})
+
+			// trap mousedown locally on each element
+			jQuery(el).bind('handswipe', function (evt)
+			{
+				// only support default configuration option
+				if (evt.gesture.config.swipeSectors == 2)
+				{
+					// tested only on andoid so far (from experience could work on ipad too)
+					if (evt.gesture.swipeSector === 0 && evt.gesture.config.native.panY) evt.preventDefault();
+					if (evt.gesture.swipeSector === 1 && evt.gesture.config.native.panX) evt.preventDefault();
+				}
+			});
+
+		});
+		// EO bind additional events for gestures
+
+	})(OCBNET.Gestures.prototype);
+	// EO extend class
 
 
+	// trap touchend globally, "trap" for all cases
+	jQuery(document).bind('touchend touchcancel', function (evt)
+	{
+
+		// get variables from the event object
+		var org = evt.originalEvent,
+				touches = org.changedTouches || [];
+
+		// process all newly added fingers
+		jQuery(touches).each(function (i, touch)
+		{
+
+			// create new finger object
+			var event = jQuery.Event('fingerup',
+			{
+				type : 'touch',
+				x : touch.screenX,
+				y : touch.screenY,
+				id : touch.identifier,
+				originalEvent: evt
+			});
+
+			// only release the specific button
+			OCBNET.Gestures.fingerup(event);
+
+		});
+
+	})
+	// EO touchend
 
 
+	// trap mousemove globally, "trap" for all cases
+	// this will be called for every pointer that moved
+	jQuery(document).bind('touchmove', function (evt)
+	{
 
+		// get variables from the event object
+		var org = evt.originalEvent,
+				touches = org.changedTouches || [];
 
+		// process all newly added fingers
+		jQuery(touches).each(function (i, touch)
+		{
 
+			// create new fingermove event object
+			var event = jQuery.Event('fingermove',
+			{
+				type : 'touch',
+				x : touch.screenX,
+				y : touch.screenY,
+				id : touch.identifier,
+				originalEvent: evt
+			});
 
+			// always move all fingers at once
+			OCBNET.Gestures.fingermove(event);
 
+		});
 
-
-
-
-
-
-
-
-
-
-
-
-
+	})
+	// EO MSPointerMove
 
 
 })(jQuery);
-// EO private scope;
-// @@@ private scope @@@
-(function()
-{
-
-
-	// @@@ private fn: trap @@@
-	function trap (handleObj)
-	{
-
-		// get current handler for event
-		var handler = handleObj.handler;
-
-		// @@@ closure fn: trapped @@@
-		var trapped = function (evt)
-		{
-
-			// call the original handler first
-			var rv = handler.call(this, evt);
-
-			// check if event propagation was disabled
-			if (rv == false || evt.isPropagationStopped())
-			{
-
-				// store some event attributes
-				var type = evt.type,
-				    isTrigger = evt.isTrigger,
-				    isPropagationStopped = evt.isPropagationStopped,
-				    isImmediatePropagationStopped = evt.isImmediatePropagationStopped;
-
-				// add trap prefix to event
-				// for custom event on target
-				evt.type = 'trap' + evt.type;
-
-				// force custom event propagating
-				evt.isPropagationStopped = function () { return false; };
-				evt.isImmediatePropagationStopped = function () { return false; }
-
-				// this will bubble up so you can
-				// handle that trapped event anyway
-				// XXX: Maybe call on parent instead
-				jQuery(evt.target).trigger(evt);
-
-				// restore some event attributes
-				evt.type = type; evt.isTrigger = isTrigger;
-				if (isPropagationStopped) evt.stopPropagation();
-				if (isImmediatePropagationStopped) evt.stopImmediatePropagation();
-
-				// return the same as original handler
-				if (typeof rv != 'undefined') return rv;
-
-			}
-			// EO if not propagating
-
-		}
-		// @@@ EO closure fn: trapped @@@
-
-		// reset given handler
-		handleObj.handler = trapped;
-
-	}
-	// @@@ EO private fn: trap @@@
-
-
-	// special event callback
-	var special = { add : trap };
-
-	// now register common event types to trap
-	jQuery.event.special['mouseup'] = special;
-	jQuery.event.special['mouseout'] = special;
-	jQuery.event.special['mouseover'] = special;
-	jQuery.event.special['mousemove'] = special;
-	jQuery.event.special['mousedown'] = special;
-	jQuery.event.special['touchend'] = special;
-	jQuery.event.special['touchmove'] = special;
-	jQuery.event.special['touchstart'] = special;
-	jQuery.event.special['touchcancel'] = special;
-
-
-})()
-// @@@ EO private scope @@@
+// EO private scope
 ;
 /*
 
@@ -706,187 +827,108 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 (function (jQuery)
 {
 
+	// proper detection for ie10 on desktop (https://github.com/CreateJS/EaselJS/issues/273)
+	if ( ! (window.navigator['msPointerEnabled'] && window.navigator["msMaxTouchPoints"] > 0) ) return;
+
+	// extend class
 	(function(prototype)
 	{
 
-		var handler = prototype.handler;
-
-		// @@@ private fn: handleTouchDownEvent @@@
-		handler['touchstart'] = function (evt)
-		{
-
-			// get variables from the event object
-			var el = evt.currentTarget;
-
-			// get touch event options
-			var org = evt.originalEvent,
-			    touches = org.touches || [],
-			    changed = org.changedTouches || [];
-
-			// process all newly added fingers
-			jQuery(changed).each(function (i, touch)
-			{
-
-				// create the finger object
-				// copy some data from event
-				var finger = {
-					el: el,
-					id : touch.identifier,
-					type : evt.type,
-					// pageX : touch.pageX,
-					// pageY : touch.pageY,
-					// clientX : touch.clientX,
-					// clientY : touch.clientY,
-					screenX : touch.screenX,
-					screenY : touch.screenY,
-					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
-				};
-
-				// create a fingerdown event object
-				var event = new jQuery.Event('fingerdown', {
-
-					finger: finger
-
-				})
-
-				// emmit this event on the element
-				// this will bubble up to propably
-				// more gesture handlers, use setup
-				// to decide on each gesture if you
-				// would like to use that finger
-				jQuery(el).trigger(event)
-
-			})
-
-		}
-		// @@@ EO private fn: handleTouchDownEvent @@@
-
-
-		// @@@ private fn: handleTouchEndEvent @@@
-		handler['touchend'] = function (evt)
-		{
-
-			// get variables from the event object
-			var el = evt.currentTarget;
-
-			// get touch event options
-			var org = evt.originalEvent,
-			    touches = org.touches || [],
-			    changed = org.changedTouches || [];
-
-			// process all newly added fingers
-			jQuery(changed).each(function (i, touch)
-			{
-
-				// create the finger object
-				// copy some data from event
-				var finger = {
-					id : touch.identifier,
-					type : evt.type,
-					// pageX : touch.pageX,
-					// pageY : touch.pageY,
-					// clientX : touch.clientX,
-					// clientY : touch.clientY,
-					screenX : touch.screenX,
-					screenY : touch.screenY,
-					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
-				};
-
-				// create a fingerdown event object
-				var event = new jQuery.Event('fingerup', {
-
-					finger: finger
-
-				})
-
-				// emmit this event on the element
-				// this will bubble up to propably
-				// more gesture handlers, use setup
-				// to decide on each gesture if you
-				// would like to use that finger
-				jQuery(el).trigger(event)
-
-			})
-
-		}
-		// @@@ EO private fn: handleTouchEndEvent @@@
-
-		// @@@ private fn: handleTouchMoveEvent @@@
-		handler['touchmove'] = function (evt)
-		{
-
-			// get variables from the event object
-			var el = evt.currentTarget;
-
-			// get the gesture data from element
-			var gesture = jQuery(el).data('gesture');
-
-			// get touch event options
-			var org = evt.originalEvent,
-			    touches = org.touches || [],
-			    changed = org.changedTouches || [];
-
-			// create new fingers objects
-			// this is stored as move data
-			var fingers = []
-
-			// process all newly added fingers
-			jQuery(changed).each(function (i, touch)
-			{
-
-				// create new fingers objects
-				// this is stored as move data
-				fingers.push({
-					el : el,
-					id : touch.identifier,
-					type : evt.type,
-					// pageX : touch.pageX,
-					// pageY : touch.pageY,
-					// clientX : touch.clientX,
-					// clientY : touch.clientY,
-					screenX : touch.screenX,
-					screenY : touch.screenY,
-					timeStamp : evt.timeStamp,
-					originalEvent : evt.originalEvent
-				});
-
-			});
-			// EO all changed fingers
-
-			// dispatch normalized data
-			gesture.fingersMove(fingers, evt);
-
-		}
-		// @@@ EO private fn: handleTouchMoveEvent @@@
-
-
-
-
-		handler['touchcancel'] = handler['touchend'];
-
+		// bind additional events for gestures
 		prototype.init.push(function (el)
 		{
 
-			var handle = jQuery.proxy(this.handle, this),
-			    events = ['start', 'move', 'end', 'cancel'];
+			// create a closure
+			var closure = this;
 
-			for (var i in events)
+			// trap mousedown locally on each element
+			jQuery(el).bind('MSPointerDown', function (evt)
 			{
-				var event = events[i];
-				// bind ...
-				jQuery(el)
-					// ... to the touch events
-					.bind('touch' + event, handle)
-					.bind('traptouch' + event, handle);
-				// taken from sources from the internet
-				// if( window.navigator.msPointerEnabled )
-				// { jQuery(el).css('msTouchAction', 'pan-y'); }
-			}
+
+				// get variables from event
+				var el = evt.currentTarget,
+				    org = evt.originalEvent;
+
+				// get the gesture for current element
+				// it should be here, otherwise I don't know
+				// why I would be registered on this element
+				var gesture = jQuery(el).data('gesture');
+
+				// assertion for same object (play safe - dev)
+				if (gesture !== closure) eval("alert('assertion')");
+
+				// create new finger down event object
+				// you may use it to cancel event bubbeling
+				var finger = new jQuery.Event('fingerdown',
+				{
+					type : 'pointer',
+					x : org.pageX,
+					y : org.pageY,
+					id : org.pointerId,
+					originalEvent : evt
+				});
+
+				// pass on to gesture handler
+				gesture.fingerDown(finger)
+
+			})
+			// taken from inet sources
+			.css('msTouchAction', 'none')
+
 		});
+		// EO bind additional events for gestures
 
 	})(OCBNET.Gestures.prototype);
+	// EO extend class
+
+
+	// trap mouseup globally, "trap" for all cases
+	jQuery(document).bind('MSPointerUp', function (evt)
+	{
+
+		// get variables from the event object
+		var org = evt.originalEvent;
+
+		// create new finger object
+		var event = new jQuery.Event('fingerup',
+		{
+			type : 'pointer',
+			x : org.pageX,
+			y : org.pageY,
+			id : org.pointerId,
+			originalEvent: evt
+		})
+
+		// only release the specific button
+		OCBNET.Gestures.fingerup(event);
+
+	})
+	// EO MSPointerUp
+
+
+	// trap mousemove globally, "trap" for all cases
+	// this will be called for every pointer that moved
+	jQuery(document).bind('MSPointerMove', function (evt)
+	{
+
+		// get variables from the event object
+		var org = evt.originalEvent;
+
+		// create new finger object
+		var event = jQuery.Event('fingermove',
+		{
+			type : 'pointer',
+			x : org.pageX,
+			y : org.pageY,
+			id : org.pointerId,
+			originalEvent: evt
+		});
+
+		// move just one finger at once
+		OCBNET.Gestures.fingermove(event);
+
+	})
+	// EO MSPointerMove
 
 
 })(jQuery);

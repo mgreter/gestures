@@ -11,173 +11,108 @@
 (function (jQuery)
 {
 
-	var els = {};
+	// proper detection for ie10 on desktop (https://github.com/CreateJS/EaselJS/issues/273)
+	if ( ! (window.navigator['msPointerEnabled'] && window.navigator["msMaxTouchPoints"] > 0) ) return;
 
-	if ( ! 'msPointerEnabled' in window.navigator ) return;
-
+	// extend class
 	(function(prototype)
 	{
 
-		var handler = prototype.handler;
-
-		// @@@ private fn: handleTouchDownEvent @@@
-		handler['MSPointerDown'] = function (evt)
-		{
-
-			// get variables from the event object
-			var el = evt.currentTarget,
-			    org = evt.originalEvent;
-
-console.logall(org.pointerId, " - ", evt.which);
-
-			// create the finger object
-			// copy some data from event
-			var finger = {
-				el: el,
-				type : evt.type,
-				id : org.pointerId,
-				originalEvent : evt,
-				screenX : org.pageX,
-				screenY : org.pageY,
-				timeStamp : evt.timeStamp
-			};
-
-			els[finger.id] = el;
-
-			console.log('DOWN', finger.id, el.id);
-
-			// create a fingerdown event object
-			var event = new jQuery.Event('fingerdown', {
-
-				finger: finger,
-					originalEvent: evt
-
-			})
-
-			// emmit this event on the element
-			// this will bubble up to propably
-			// more gesture handlers, use setup
-			// to decide on each gesture if you
-			// would like to use that finger
-			jQuery(el).trigger(event)
-
-		}
-		// @@@ EO private fn: handleTouchDownEvent @@@
-
-
-		// @@@ private fn: handleTouchEndEvent @@@
-		handler['MSPointerUp'] = function (evt)
-		{
-
-			// get variables from the event object
-			var el = evt.currentTarget,
-			    org = evt.originalEvent;
-
-			el = els[org.pointerId];
-
- if (!el) return;
-
-			// create the finger object
-			// copy some data from event
-			var finger = {
-				el: el,
-				type : evt.type,
-				id : org.pointerId,
-				originalEvent : evt,
-				screenX : org.pageX,
-				screenY : org.pageY,
-				timeStamp : evt.timeStamp
-			};
-console.log('UP', finger.id, el.id);
-			// create a fingerdown event object
-			var event = new jQuery.Event('fingerup', {
-
-				finger: finger,
-				originalEvent: evt
-
-			})
-
-			// emmit this event on the element
-			// this will bubble up to propably
-			// more gesture handlers, use setup
-			// to decide on each gesture if you
-			// would like to use that finger
-			jQuery(el).trigger(event)
-
-delete els[finger.id];
-
-		}
-		// @@@ EO private fn: handleTouchEndEvent @@@
-
-		// @@@ private fn: handleTouchMoveEvent @@@
-		handler['MSPointerMove'] = function (evt)
-		{
-
-			// get variables from the event object
-			var el = evt.currentTarget,
-			    org = evt.originalEvent;
-
-			el = els[org.pointerId];
-
-			// get the gesture data from element
-			var gesture = jQuery(el).data('gesture');
-
-			// create the finger object
-			// copy some data from event
-			var finger = {
-				el: el,
-				type : evt.type,
-				id : org.pointerId,
-				originalEvent : evt,
-				screenX : org.pageX,
-				screenY : org.pageY,
-				timeStamp : evt.timeStamp
-			};
-
-			// create a fingerdown event object
-			var event = new jQuery.Event('fingermove', {
-
-				finger: finger,
-				originalEvent: evt
-
-			})
-
-			// emmit this event on the element
-			// this will bubble up to propably
-			// more gesture handlers, use setup
-			// to decide on each gesture if you
-			// would like to use that finger
-			jQuery(el).trigger(event)
-
-			// dispatch normalized data
-			// gesture.fingersMove([finger], evt);
-
-		}
-		// @@@ EO private fn: handleTouchMoveEvent @@@
-
-
-//		handler['touchcancel'] = handler['touchend'];
-
+		// bind additional events for gestures
 		prototype.init.push(function (el)
 		{
 
-			var handle = jQuery.proxy(this.handle, this);
+			// create a closure
+			var closure = this;
 
-			// bind to the pointer event
-			jQuery(el).bind('MSPointerDown', handle);
-			// taken from sources from the internet
-			if( window.navigator.msPointerEnabled )
-			{ jQuery(el).css('msTouchAction', 'none'); }
+			// trap mousedown locally on each element
+			jQuery(el).bind('MSPointerDown', function (evt)
+			{
 
-			// bind global ...
-			jQuery(document)
-				// ... pointer events
-				.bind('MSPointerUp', handle)
-				.bind('MSPointerMove', handle);
+				// get variables from event
+				var el = evt.currentTarget,
+				    org = evt.originalEvent;
+
+				// get the gesture for current element
+				// it should be here, otherwise I don't know
+				// why I would be registered on this element
+				var gesture = jQuery(el).data('gesture');
+
+				// assertion for same object (play safe - dev)
+				if (gesture !== closure) eval("alert('assertion')");
+
+				// create new finger down event object
+				// you may use it to cancel event bubbeling
+				var finger = new jQuery.Event('fingerdown',
+				{
+					type : 'pointer',
+					x : org.pageX,
+					y : org.pageY,
+					id : org.pointerId,
+					originalEvent : evt
+				});
+
+				// pass on to gesture handler
+				gesture.fingerDown(finger)
+
+			})
+			// taken from inet sources
+			.css('msTouchAction', 'none')
 
 		});
+		// EO bind additional events for gestures
 
 	})(OCBNET.Gestures.prototype);
+	// EO extend class
+
+
+	// trap mouseup globally, "trap" for all cases
+	jQuery(document).bind('MSPointerUp', function (evt)
+	{
+
+		// get variables from the event object
+		var org = evt.originalEvent;
+
+		// create new finger object
+		var event = new jQuery.Event('fingerup',
+		{
+			type : 'pointer',
+			x : org.pageX,
+			y : org.pageY,
+			id : org.pointerId,
+			originalEvent: evt
+		})
+
+		// only release the specific button
+		OCBNET.Gestures.fingerup(event);
+
+	})
+	// EO MSPointerUp
+
+
+	// trap mousemove globally, "trap" for all cases
+	// this will be called for every pointer that moved
+	jQuery(document).bind('MSPointerMove', function (evt)
+	{
+
+		// get variables from the event object
+		var org = evt.originalEvent;
+
+		// create new finger object
+		var event = jQuery.Event('fingermove',
+		{
+			type : 'pointer',
+			x : org.pageX,
+			y : org.pageY,
+			id : org.pointerId,
+			originalEvent: evt
+		});
+
+		// move just one finger at once
+		OCBNET.Gestures.fingermove(event);
+
+	})
+	// EO MSPointerMove
 
 
 })(jQuery);
