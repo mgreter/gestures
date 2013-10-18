@@ -780,7 +780,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 			var closure = this;
 
 			// trap mousedown locally on each element
-			jQuery(el).bind('mousedown trapmousedown', function (evt)
+			jQuery(el).bind('mousedown', function (evt)
 			{
 
 				// get variables from event
@@ -866,7 +866,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 	// EO mouseup
 
 	// trap mousemove globally, "trap" for all cases
-	jQuery(document).bind('mousemove trapmousemove', function (evt)
+	jQuery(document).bind('mousemove', function (evt)
 	{
 
 		// create new fingersmove event object
