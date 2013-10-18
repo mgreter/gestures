@@ -24,6 +24,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 {
 
 	// static array
+	var fingers = {};
 	var gestures = [];
 
 	// static counter
@@ -105,41 +106,52 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 			// does nothing for unknown finger
 			gestures[g].fingerUp(evt);
 		}
+		// finger may be deleted
+		if (fingers[evt.id])
+		{
+			// update shared finger
+			fingers[evt.id].x = evt.x;
+			fingers[evt.id].y = evt.y;
+		}
 	};
 	// @@@ EO: fingerup @@@
 
 	// @@@ move all fingers on surface @@@
+	// emulate event chain for all gestures
 	OCBNET.Gestures.fingermove = function (evt)
 	{
+		// get all gestures for finger
+		var gestures = surface[evt.id];
 		// process all registered gestures
-		var g = gestures.length; while (g--)
+		for(var g = 0, l = gestures.length; g < l; g++)
 		{
-				// call move for this finger
+			// call move for this finger
 			gestures[g].fingerMove(evt);
+			// exit loop if propagation stopped
+			if (evt.isPropagationStopped()) break;
 		}
+		// update shared finger
+		fingers[evt.id].x = evt.x;
+		fingers[evt.id].y = evt.y;
 	};
 
 
 	// @@@ move all fingers on surface @@@
 	OCBNET.Gestures.fingersmove = function (evt)
 	{
-		// process all registered gestures
-		var g = gestures.length; while (g--)
+		// now process all finger ids
+		for (var id in surface)
 		{
-			// now process all finger ids
-			for (var id in gestures[g].finger)
+			// create new fingermove event object
+			var event = jQuery.Event('fingermove',
 			{
-				// create new fingermove event object
-				var event = jQuery.Event('fingermove',
-				{
-					id : id,
-					x : evt.x,
-					y : evt.y,
-					originalEvent: evt
-				});
-				// call move for each finger
-				gestures[g].fingerMove(event);
-			}
+				id : id,
+				x : evt.x,
+				y : evt.y,
+				originalEvent: evt
+			});
+			// call move for each finger
+			OCBNET.Gestures.fingermove(event);
 		}
 	};
 	// @@@ EO move all fingers on surface @@@
@@ -197,12 +209,18 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 			// for optimizer
 			var gesture = this;
 
-			// create a new finger (take values from event)
+			// create a local finger for this gesture
+			// you decide when to update properties
 			var finger = new OCBNET.Gestures.Finger(evt);
+
+			// create a new finger shared across all instances
+			if (typeof fingers[evt.id] == 'undefined')
+			{ fingers[evt.id] = new OCBNET.Gestures.Finger(evt); }
 
 			// create a new finger down event
 			var event = new jQuery.Event('handstart',
 			{
+				dx: 0, dy: 0,
 				finger: finger,
 				gesture: gesture,
 				originalEvent: evt
@@ -234,30 +252,27 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				gesture.rotation = 0; gesture.distance = 0;
 
 				// increase counter
-				this.fingers ++;
+				gesture.fingers ++;
 
 				// remember maximum fingers on gesture
-				if (this.maximum < this.fingers)
-				{ this.maximum = this.fingers; }
+				if (gesture.maximum < gesture.fingers)
+				{ gesture.maximum = gesture.fingers; }
 
 				// add finger to ordered list
-				this.ordered.push(finger.id);
+				gesture.ordered.push(finger.id);
 
 				// attach finger to gesture
-				this.finger[finger.id] = finger;
+				gesture.finger[finger.id] = finger;
 
-				// attach finger to surface
-				surface[finger.id] = finger;
+				// create surface array
+				if (!surface[finger.id])
+				{ surface[finger.id] = []; }
 
-				// calculate status of this gesture
-				this.start = {
-					center : this.getCenter(),
-					rotation : this.getRotation(),
-					distance : this.getDistance()
-				}
+				// push finger to surface
+				surface[finger.id].push(gesture);
 
 				// create and init a copy for move
-				this.move = jQuery.extend({}, this.start);
+				gesture.move = jQuery.extend({}, gesture.start);
 
 			}
 			// EO if not used
@@ -284,6 +299,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				finger.x = evt.x;
 				finger.y = evt.y;
 
+				// calculate shared delta move
+				var dx = fingers[id].x - evt.x,
+				    dy = fingers[id].y - evt.y;
+
 				// calculations
 				gesture.move = {
 					center : gesture.getCenter(),
@@ -306,16 +325,20 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				var deltaX = Math.abs(gesture.offset.x),
 				    deltaY = Math.abs(gesture.offset.y);
 
+				// handler options
+				var options =
+				{
+					dx: dx, dy: dy,
+					finger: finger,
+					gesture: gesture,
+					originalEvent: evt
+				}
+
 				// trigger hand move event
 				// event does not bubbles up
 				jQuery(gesture.el).triggerHandler
 				(
-					new jQuery.Event('handmove',
-					{
-						finger: finger,
-						gesture: gesture,
-						originalEvent: evt
-					})
+					new jQuery.Event('handmove', options)
 				);
 
 				// check if there is a swipe movement
@@ -342,12 +365,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					// event does not bubbles up
 					jQuery(gesture.el).triggerHandler
 					(
-						new jQuery.Event('handswipe',
-						{
-							finger: finger,
-							gesture: gesture,
-							originalEvent: evt
-						})
+						new jQuery.Event('handswipe', options)
 					);
 				}
 				// EO if swiping
@@ -359,12 +377,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 					// event does not bubbles up
 					jQuery(gesture.el).triggerHandler
 					(
-						new jQuery.Event('handtransform',
-						{
-							finger: finger,
-							gesture: gesture,
-							originalEvent: evt
-						})
+						new jQuery.Event('handtransform', options)
 					);
 				}
 				// EO if multifinger gesture
@@ -395,6 +408,10 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				finger.x = evt.x;
 				finger.y = evt.y;
 
+				// calculate shared delta move
+				var dx = fingers[id].x - evt.x,
+				    dy = fingers[id].y - evt.y;
+
 				// calculations
 				gesture.stop = {
 					center : gesture.getCenter(),
@@ -416,6 +433,7 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				// create a new finger down event
 				var event = new jQuery.Event('handstop',
 				{
+					dx: dx, dy: dy,
 					finger: finger,
 					gesture: gesture
 				});
@@ -443,10 +461,18 @@ if (typeof OCBNET == 'undefined') var OCBNET = {};
 				gesture.ordered.splice(idx, 1);
 
 				// remove the finger from the gesture
-				delete gesture.finger[finger.id];
+				delete gesture.finger[id];
 
-				// remove finger from surface
-				delete surface[finger.id];
+				// remove from surface (find index and remove via splice)
+				var idx = jQuery.inArray(gesture, surface[id]);
+				if (idx != -1) surface[id].splice( idx, 1 );
+
+				// remove statucs if array is empty
+				if (surface[id].length == 0)
+				{ 
+					delete fingers[id];
+					delete surface[id];
+				}
 
 			}
 			// EO if used
