@@ -35,6 +35,12 @@ Main testing devices
 - Samsung Galaxy P5110 (Tab 2 10.1)
 - Acer Icona W700 (Windows 8 / IE 10)
 
+Compile sources
+===============
+
+We use [webmerge](https://github.com/mgreter/webmerge) to create the release
+files. Once it is installed, you simply need to execute the compiler scripts.
+
 To Do
 =====
 
