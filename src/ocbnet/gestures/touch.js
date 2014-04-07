@@ -72,7 +72,8 @@
 				// only support default configuration option
 				if (evt.gesture.config.swipeSectors == 2)
 				{
-					// tested only on andoid so far (from experience could work on ipad too)
+					// tested only on android so far (from experience this should work on ipad too)
+					// chrome change the bevahior recently (only firing one touch move after it decided)
 					if (evt.gesture.swipeSector === 0 && evt.gesture.config.native.panY) evt.preventDefault();
 					if (evt.gesture.swipeSector === 1 && evt.gesture.config.native.panX) evt.preventDefault();
 				}
