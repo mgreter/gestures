@@ -34,6 +34,7 @@ Main testing devices
 
 - Samsung Galaxy P5110 (Tab 2 10.1)
 - Acer Icona W700 (Windows 8 / IE 10)
+- MS Surface 2 (Windows RT 8.1 / IE 11)
 
 Compile sources
 ===============
