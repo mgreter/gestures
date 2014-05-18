@@ -896,8 +896,8 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 					var event = new jQuery.Event('fingerdown',
 					{
 						type : 'touch',
-						x : touch.screenX,
-						y : touch.screenY,
+						x : touch.clientX || touch.screenX,
+						y : touch.clientY || touch.screenY,
 						id : touch.identifier,
 						originalEvent : evt
 					});
@@ -945,8 +945,8 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 			var event = jQuery.Event('fingerup',
 			{
 				type : 'touch',
-				x : touch.screenX,
-				y : touch.screenY,
+				x : touch.clientX || touch.screenX,
+				y : touch.clientY || touch.screenY,
 				id : touch.identifier,
 				originalEvent: evt
 			});
@@ -977,8 +977,8 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 			var event = jQuery.Event('fingermove',
 			{
 				type : 'touch',
-				x : touch.screenX,
-				y : touch.screenY,
+				x : touch.clientX || touch.screenX,
+				y : touch.clientY || touch.screenY,
 				id : touch.identifier,
 				originalEvent: evt
 			});
