@@ -53,8 +53,8 @@
 					var event = new jQuery.Event('fingerdown',
 					{
 						type : 'touch',
-						x : touch.screenX,
-						y : touch.screenY,
+						x : touch.clientX || touch.screenX,
+						y : touch.clientY || touch.screenY,
 						id : touch.identifier,
 						originalEvent : evt
 					});
@@ -102,8 +102,8 @@
 			var event = jQuery.Event('fingerup',
 			{
 				type : 'touch',
-				x : touch.screenX,
-				y : touch.screenY,
+				x : touch.clientX || touch.screenX,
+				y : touch.clientY || touch.screenY,
 				id : touch.identifier,
 				originalEvent: evt
 			});
@@ -134,8 +134,8 @@
 			var event = jQuery.Event('fingermove',
 			{
 				type : 'touch',
-				x : touch.screenX,
-				y : touch.screenY,
+				x : touch.clientX || touch.screenX,
+				y : touch.clientY || touch.screenY,
 				id : touch.identifier,
 				originalEvent: evt
 			});
