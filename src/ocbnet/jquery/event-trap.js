@@ -64,16 +64,45 @@
 	// special event callback
 	var special = { add : trap };
 
-	// now register common event types to trap
-	jQuery.event.special['mouseup'] = special;
-	jQuery.event.special['mouseout'] = special;
-	jQuery.event.special['mouseover'] = special;
-	jQuery.event.special['mousemove'] = special;
-	jQuery.event.special['mousedown'] = special;
-	jQuery.event.special['touchend'] = special;
-	jQuery.event.special['touchmove'] = special;
-	jQuery.event.special['touchstart'] = special;
-	jQuery.event.special['touchcancel'] = special;
+	// check for mouse interface
+	if ( 'onmousedown' in window )
+	{
+		// register common event types to trap
+		jQuery.event.special['mouseup'] = special;
+		jQuery.event.special['mouseout'] = special;
+		jQuery.event.special['mouseover'] = special;
+		jQuery.event.special['mousemove'] = special;
+		jQuery.event.special['mousedown'] = special;
+	}
+
+	// check for touch interface
+	if ( 'ontouchstart' in window )
+	{
+		// register common event types to trap
+		jQuery.event.special['touchend'] = special;
+		jQuery.event.special['touchmove'] = special;
+		jQuery.event.special['touchstart'] = special;
+		jQuery.event.special['touchcancel'] = special;
+	}
+
+	// check if we have a pointer interface (ie11)
+	if ( window.navigator['pointerEnabled'] && window.navigator["maxTouchPoints"] > 0 )
+	{
+		// register common event types to trap
+		jQuery.event.special['pointerup'] = special;
+		jQuery.event.special['pointermove'] = special;
+		jQuery.event.special['pointerdown'] = special;
+		jQuery.event.special['pointercancel'] = special;
+	}
+	// check if we have a pointer interface (ie10)
+	else if ( window.navigator['msPointerEnabled'] && window.navigator["msMaxTouchPoints"] > 0 )
+	{
+		// register common event types to trap
+		jQuery.event.special['MSPointerUp'] = special;
+		jQuery.event.special['MSPointerMove'] = special;
+		jQuery.event.special['MSPointerDown'] = special;
+		jQuery.event.special['MSPointerCancel'] = special;
+	}
 
 
 })()

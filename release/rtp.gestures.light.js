@@ -882,7 +882,10 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 	var evt_name = {
 		'up' : 'MSPointerUp',
 		'move' : 'MSPointerMove',
-		'down' : 'MSPointerDown'
+		'down' : 'MSPointerDown',
+		'cancel' : 'MSPointerCancel',
+		// name for css attributes
+		'action' : 'ms-touch-action'
 	};
 
 	// https://coderwall.com/p/mfreca
@@ -896,7 +899,10 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 		evt_name = {
 			'up' : 'pointerup',
 			'move' : 'pointermove',
-			'down' : 'pointerdown'
+			'down' : 'pointerdown',
+			'cancel' : 'pointercancel',
+			// name for css attributes
+			'action' : 'touch-action'
 		};
 	}
 
@@ -911,7 +917,20 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 			// create a closure
 			var closure = this;
 
-			// trap mousedown locally on each element
+			// native actions
+			var actions = [];
+
+			// get object with info about which
+			// actions should be handled by UA
+			var action = this.config.native || {};
+
+			// push native features to array
+			if (action.panY) actions.push('pan-y');
+			if (action.panX) actions.push('pan-x');
+			// add default value if we have no option yet
+			if (actions.length == 0) actions.push('none');
+
+			// trap pointerdown locally on each element
 			jQuery(el).bind(evt_name['down'], function (evt)
 			{
 
@@ -942,8 +961,9 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 				gesture.fingerDown(finger)
 
 			})
-			// taken from inet sources
-			.css('msTouchAction', 'none')
+			// this can ie. cancel pointers on scroll
+			// mostly we will only see pan-x/pan-y here
+			.css(evt_name['action'], actions.join(' '))
 
 		});
 		// EO bind additional events for gestures
@@ -952,8 +972,12 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 	// EO extend class
 
 
-	// trap mouseup globally, "trap" for all cases
-	jQuery(document).bind(evt_name['up'], function (evt)
+	// use same handler for pointerup and pointercancel
+	var evt_up = [evt_name['up'], evt_name['cancel']].join(' ');
+
+	// trap pointerup globally, "trap" for all cases
+	// canceled ie. if user decided to scroll not swipe
+	jQuery(document).bind(evt_up, function (evt)
 	{
 
 		// get variables from the event object
@@ -967,7 +991,7 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 			y : org.pageY,
 			id : org.pointerId,
 			originalEvent: evt
-		})
+		});
 
 		// only release the specific button
 		OCBNET.Gestures.fingerup(event);
@@ -975,8 +999,7 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 	})
 	// EO MSPointerUp
 
-
-	// trap mousemove globally, "trap" for all cases
+	// trap pointermove globally, "trap" for all cases
 	// this will be called for every pointer that moved
 	jQuery(document).bind(evt_name['move'], function (evt)
 	{
