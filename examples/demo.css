@@ -18,6 +18,9 @@ HTML, BODY, PRE
 {
 	width: auto;
 	padding: 60px 60px;
+	/* maybe disable some */
+	/* pointer-events: all; */
+	/* ms-pointer-events: all; */
 }
 
 #green

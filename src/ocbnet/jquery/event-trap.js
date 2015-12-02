@@ -1,7 +1,14 @@
+/*
+
+  Copyright (c) Marcel Greter 2015 - OCBNET Gestures
+  This plugin is available for use in all personal or
+  commercial projects under both MIT and GPL licenses.
+
+*/
+
 // @@@ private scope @@@
 (function()
 {
-
 
 	// @@@ private fn: trap @@@
 	function trap (handleObj)

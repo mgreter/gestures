@@ -3,6 +3,11 @@ jQuery(function()
 
 	var colors = ['red', 'blue', 'green'];
 
+	// functions we want natively
+	// panY for vertical scrolling
+	// panX for horizontal scrolling
+	var native = { panY: false };
+
 	jQuery.each(colors, function (i, color)
 	{
 
@@ -10,48 +15,76 @@ jQuery(function()
 
 		// called to decide if finger is wanted
 		// some elements may be satisfied with one finger
-		// they can also decide if the want others to have it
-		// or if further fingers should be
+		// you can decide if they want others to know about
+		// this event or if it should not bubble any further
 		.bind('handstart', function (evt)
 		{
 
-			// every field can take one finger
-			if (evt.gesture.fingers == 0)
+			// green takes 2, then abort all
+			if (evt.currentTarget.id == 'green')
 			{
-				// do nothing (take the finger)
-			}
-			// this gesture has already one finger
-			else if (evt.gesture.fingers == 1)
-			{
-				// special case on the blue rect
-				if (evt.currentTarget.id == 'blue')
+				// has already one finger down
+				if (evt.gesture.fingers == 1)
+				{
+					// do not allow more fingers
+					// but do not stop propagating
+					evt.stopPropagation();
+				}
+				// has already two fingers down
+				else if (evt.gesture.fingers == 2)
 				{
 					// do not allow more fingers
 					// but do not stop propagating
 					evt.preventDefault();
 				}
-				else
+			}
+			// blue takes only one, but bubble up
+			else if (evt.currentTarget.id == 'blue')
+			{
+				// has already one finger down
+				if (evt.gesture.fingers == 1)
 				{
-					// consume this finger
-					evt.stopPropagation();
+					// do not allow more fingers
+					// but do not stop propagating
+					evt.preventDefault();
 				}
 			}
-			// there are already two fingers
-			else if (evt.gesture.fingers > 1)
+			// red takes any, but green stops at 2
+			else if (evt.currentTarget.id == 'red')
 			{
-				// do not take more fingers
-				// but do not stop propagating
-				evt.preventDefault();
 			}
+
+		})
+
+		.bind('handstop', function (evt)
+		{
+
+			// green takes 2, then abort all
+			if (evt.currentTarget.id == 'green')
+			{
+				console.info(evt.gesture.fingers);
+				if (evt.gesture.fingers)
+				{
+					evt.preventDefault();
+				}
+			}
+
+		})
+
+		.bind('mousemove', function (evt) {
+
+			// console.info('MOUSEMOVE', Math.random());
 
 		})
 
 		// call gesture and pass config options
 		// needed to call to dispatch gesture events
 		.gesture({
-			swipeSectors: 2,
+			swipeSectors: 4,
 			swipeMinDistance: 10,
-			native: { panY: true }
+			// false is the default
+			// hatchPointerDown: false,
+			native: native
 		})
 
 		.bind('handstop', function (evt) { console.log('STOP', color); })
@@ -145,7 +178,7 @@ jQuery(function()
 	function updateLog (div)
 	{
 
-		html = div + '<br>';
+		var html = div + '<br>';
 
 		var gesture = jQuery('#' + div).data('gesture');
 

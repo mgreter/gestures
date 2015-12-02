@@ -1,7 +1,8 @@
 /*
 
-  Copyright (c) Marcel Greter 2012 - OCBNET Gestures 0.0.0
-  This plugin available for use in all personal or commercial projects under both MIT and GPL licenses.
+  Copyright (c) Marcel Greter 2015 - OCBNET Gestures
+  This plugin is available for use in all personal or
+  commercial projects under both MIT and GPL licenses.
 
 */
 

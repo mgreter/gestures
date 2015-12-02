@@ -1,7 +1,8 @@
 /*
 
-  Copyright (c) Marcel Greter 2012 - OCBNET gesture 0.0.0
-  This plugin available for use in all personal or commercial projects under both MIT and GPL licenses.
+  Copyright (c) Marcel Greter 2015 - OCBNET Gestures
+  This plugin is available for use in all personal or
+  commercial projects under both MIT and GPL licenses.
 
 */
 
@@ -452,26 +453,34 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 				// this means the event will not bubble
 				jQuery(gesture.el).triggerHandler(event);
 
-				// abort this hand gesture right now
-				// if (finger.isDefaultPrevented()) return;
-
 				// decrease fingers
 				gesture.fingers --;
 
-				// stop swipe movement
+				// reset some states for now
+				// recalulated on next move
 				delete gesture.offset;
 				delete gesture.rotation;
 				delete gesture.distance;
 				delete gesture.swipeSector;
 
-				// get index of finger in current gesture
-				var idx = jQuery.inArray(finger.id, gesture.ordered)
-
-				// remove finger from order array
-				gesture.ordered.splice(idx, 1);
-
-				// remove the finger from the gesture
-				delete gesture.finger[id];
+				// by default we abort the full hand
+				// you may remove finger by finger
+				if (event.isDefaultPrevented())
+				{
+					// get index of finger in current gesture object
+					var idx = jQuery.inArray(finger.id, gesture.ordered)
+					// remove finger from order array
+					gesture.ordered.splice(idx, 1);
+					// remove finger from gesture
+					delete gesture.finger[id];
+				}
+				else
+				{
+					// unset all fingers
+					gesture.finger = {};
+					gesture.fingers = 0;
+					gesture.ordered.length = 0;
+				}
 
 				// remove from surface (find index and remove via splice)
 				var idx = jQuery.inArray(gesture, surface[id]);

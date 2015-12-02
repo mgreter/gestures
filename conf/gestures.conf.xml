@@ -60,8 +60,8 @@
 		<input path="src/ocbnet/gestures/pointer.js" />
 
 		<!-- generate different output versions -->
-		<output path="release/rtp.gestures.light.js" target="join" />
-		<output path="release/rtp.gestures.light.min.js" target="compile" />
+		<output path="release/ocbnet.gestures.light.js" target="join" />
+		<output path="release/ocbnet.gestures.light.min.js" target="compile" />
 
 	</js>
 
@@ -78,8 +78,8 @@
 		<input path="src/ocbnet/gestures/pointer.js" />
 
 		<!-- generate different output versions -->
-		<output path="release/rtp.gestures.full.js" target="join" />
-		<output path="release/rtp.gestures.full.min.js" target="compile" />
+		<output path="release/ocbnet.gestures.full.js" target="join" />
+		<output path="release/ocbnet.gestures.full.min.js" target="compile" />
 
 	</js>
 
@@ -99,8 +99,8 @@
 		<input path="src/ocbnet/gestures/pointer.js" />
 
 		<!-- generate different output versions -->
-		<output path="release/rtp.gestures.exp.js" target="join" />
-		<output path="release/rtp.gestures.exp.min.js" target="compile" />
+		<output path="release/ocbnet.gestures.exp.js" target="join" />
+		<output path="release/ocbnet.gestures.exp.min.js" target="compile" />
 
 	</js>
 
