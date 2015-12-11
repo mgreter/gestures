@@ -65,6 +65,12 @@
 
 				});
 
+				// this is needed for chrome
+				// setInterval would be stalled
+				var config = gesture.config;
+				if (!config.hatchTouchDown)
+				{ evt.preventDefault(); }
+
 			})
 
 			// trap mousedown locally on each element
