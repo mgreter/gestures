@@ -11,10 +11,10 @@
 (function (jQuery)
 {
 
-	if (
+	if ( (!window['PointerEvent'])
 		// proper detection for ie10+ on desktop (https://github.com/CreateJS/EaselJS/issues/273)
 		// this will also be true for ie11 and hopefully for all future IE generations (I dare you MS)
-		(!window.navigator['msPointerEnabled'] || !window.navigator["msMaxTouchPoints"]) //ie10
+		&& (!window.navigator['msPointerEnabled'] || !window.navigator["msMaxTouchPoints"]) //ie10
 		&& (!window.navigator['pointerEnabled'] || !window.navigator["maxTouchPoints"]) //ie11
 	) return;
 
@@ -33,9 +33,11 @@
 	// https://coderwall.com/p/mfreca
 	// so feature detection is the way to go, the internet says
 	// thank you IE for once again keeping things "interesting"
-	if (
-		window.navigator['pointerEnabled'] &&
-		window.navigator["maxTouchPoints"] > 0
+	// firefox has `PointerEvent` instead of `pointerEnabled`
+	// needs `dom.w3c_pointer_events.enabled` in `about:config`
+	if ((window['PointerEvent'] ||
+	     window.navigator['pointerEnabled'])
+		&& window.navigator["maxTouchPoints"]
 	) {
 		// use new names
 		evt_name = {
