@@ -7,8 +7,7 @@
   This plugin is available for use in all personal or
   commercial projects under both MIT and GPL licenses.
 
-*/
-
+*/;
 /*
 
   Copyright (c) Marcel Greter 2015 - OCBNET Gestures
@@ -716,8 +715,7 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 	// @@@ EO jQuery fn: gesture @@@
 
 })(jQuery);
-// EO private scope
-
+// EO private scope;
 /*
 
   Copyright (c) Marcel Greter 2015 - OCBNET Gestures
@@ -784,6 +782,12 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 					gesture.fingerDown(event)
 
 				});
+
+				// this is needed for chrome
+				// setInterval would be stalled
+				var config = gesture.config;
+				if (!config.hatchTouchDown)
+				{ evt.preventDefault(); }
 
 			})
 
@@ -872,7 +876,7 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 
 })(jQuery);
 // EO private scope
-
+;
 /*
 
   Copyright (c) Marcel Greter 2012 - OCBNET Gestures 0.0.0
@@ -886,10 +890,10 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 (function (jQuery)
 {
 
-	if (
+	if ( (!window['PointerEvent'])
 		// proper detection for ie10+ on desktop (https://github.com/CreateJS/EaselJS/issues/273)
 		// this will also be true for ie11 and hopefully for all future IE generations (I dare you MS)
-		(!window.navigator['msPointerEnabled'] || !window.navigator["msMaxTouchPoints"]) //ie10
+		&& (!window.navigator['msPointerEnabled'] || !window.navigator["msMaxTouchPoints"]) //ie10
 		&& (!window.navigator['pointerEnabled'] || !window.navigator["maxTouchPoints"]) //ie11
 	) return;
 
@@ -908,9 +912,11 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 	// https://coderwall.com/p/mfreca
 	// so feature detection is the way to go, the internet says
 	// thank you IE for once again keeping things "interesting"
-	if (
-		window.navigator['pointerEnabled'] &&
-		window.navigator["maxTouchPoints"] > 0
+	// firefox has `PointerEvent` instead of `pointerEnabled`
+	// needs `dom.w3c_pointer_events.enabled` in `about:config`
+	if ((window['PointerEvent'] ||
+	     window.navigator['pointerEnabled'])
+		&& window.navigator["maxTouchPoints"]
 	) {
 		// use new names
 		evt_name = {
