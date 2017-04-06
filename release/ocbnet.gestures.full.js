@@ -867,10 +867,13 @@ var decideScrollOrPanOnFirst = isChromium !== null && vendorName === "Google Inc
 (function (jQuery)
 {
 
-	// check for touch features
-	if ( ! ('ontouchstart' in window) ) return;
-	// proper detection for ie10 on desktop (https://github.com/CreateJS/EaselJS/issues/273)
-	if ( window.navigator['msPointerEnabled'] && window.navigator["msMaxTouchPoints"] > 0 ) return;
+	// abort if no touch API found or if pointer API is available
+	if ( ! ('ontouchstart' in window) || (window['PointerEvent'])
+		// proper detection for ie10+ on desktop (https://github.com/CreateJS/EaselJS/issues/273)
+		// this will also be true for ie11 and hopefully for all future IE generations (I dare you MS)
+		|| (window.navigator['msPointerEnabled'] || window.navigator["msMaxTouchPoints"]) //ie10
+		|| (window.navigator['pointerEnabled'] || window.navigator["maxTouchPoints"]) //ie11
+	) return;
 
 	// extend class
 	(function(prototype)
